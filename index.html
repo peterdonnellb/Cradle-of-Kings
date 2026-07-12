@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Cradle's Conquest</title>
+<meta name="theme-color" content="#1B120A">
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Yeseva+One&family=Mukta:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ============ START / KINGDOM SELECT SCREEN ============ -->
+<div id="start-screen">
+  <div class="start-overlay-pattern"></div>
+  <header class="start-header">
+    <h1 class="game-title">Cradle&rsquo;s Conquest</h1>
+    <p class="game-subtitle">Rise from the birthplace of civilization</p>
+  </header>
+
+  <div class="start-body">
+    <h2 class="section-label">Choose Your Kingdom</h2>
+    <div id="kingdom-grid" class="kingdom-grid"></div>
+  </div>
+
+  <footer class="start-footer">
+    <p>4 rival kingdoms will rise alongside you on a freshly generated world.</p>
+  </footer>
+</div>
+
+<!-- ============ IN-GAME UI ============ -->
+<div id="game-ui" class="hidden">
+  <canvas id="game-canvas"></canvas>
+
+  <div id="top-bar" class="hud-panel">
+    <div id="kingdom-badge" class="kingdom-badge"></div>
+    <div id="resource-bar" class="resource-bar"></div>
+  </div>
+
+  <div id="tile-info" class="hud-panel hud-panel--floating hidden"></div>
+
+  <div id="bottom-bar" class="hud-panel">
+    <button id="end-turn-btn" class="end-turn-btn">End Turn</button>
+  </div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

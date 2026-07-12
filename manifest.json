@@ -1,0 +1,14 @@
+{
+  "name": "Cradle's Conquest",
+  "short_name": "Cradle's Conquest",
+  "description": "A turn-based 4X strategy game inspired by the kingdoms and geography of Africa from antiquity through the medieval period.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1B120A",
+  "theme_color": "#1B120A",
+  "icons": [
+    { "src": "assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
