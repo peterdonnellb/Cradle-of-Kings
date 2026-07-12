@@ -5,13 +5,21 @@ from antiquity through the medieval period — in the spirit of *Battle of
 Polytopia*, built for the web with hex tiles, hand-drawn inline-SVG art, and
 mobile-first touch controls.
 
-## Status: Stage 1 of 5 complete
+## Status: Stage 3 of 5 complete
 
-This delivery implements the **world & exploration foundation**. It is a
-real, playable prototype: pick a kingdom, generate a fresh procedural
-continent, pan/zoom the map, click tiles and units, see fog of war, and move
-your starting Villager and Warrior around. Combat, city founding, tech, AI
-opponents, and diplomacy are **not** implemented yet — see the roadmap below.
+Stage 1 delivered the **world & exploration foundation**. Stage 2 added
+**cities, production, and combat**. Stage 3 adds **technology and
+progression**: a full four-branch tech tree (Core, Military, Economic,
+Naval — 18 techs total) that gates units and buildings behind research,
+8 world Wonders with permanent empire-wide bonuses, and — importantly —
+every kingdom's bonus text from the concept doc is now a real, numeric
+effect wired into combat, movement, and city economy (Kush archers really
+do hit harder at range, Ethiopia really does ignore the highland movement
+penalty, Kemet really does build Wonders cheaper next to rivers, and so on).
+AI opponents now also research technology on their own (picking randomly
+from what's available) in addition to growing/producing, though they still
+don't move, attack, found cities, or choose what to build — that's Stage 4.
+See the roadmap below for what's still ahead.
 
 ## How to run
 
@@ -25,8 +33,19 @@ No build step, no dependencies. It's plain ES modules.
    ```
 2. Open `http://localhost:8080` in a browser (desktop or mobile).
 3. Pick a kingdom, then pan (drag), zoom (scroll/pinch), and click tiles/units.
-   Click a tile inside the gold highlight to move your selected unit there.
-   Click "End Turn" to pass through the (currently silent) AI turns back to you.
+   - Click a tile inside the gold highlight to move your selected unit there
+     (movement costs biome-specific points, not just a flat tile count).
+   - Click an adjacent/in-range enemy unit while yours is selected to attack it.
+   - Select your Villager and click **Found City** in the tile panel to settle.
+   - Click your own city to open its panel: watch growth, queue units/buildings/
+     Wonders via **Add to Queue**, and pick a free improvement whenever it
+     levels up.
+   - Click the **Research** pill (top bar) to open the tech tree and pick
+     what to research next; production and growth-choice menus grey out
+     anything you haven't unlocked yet.
+   - Click "End Turn" to resolve your city economy and research, then
+     auto-pass through the AI turns (who now also research, but don't yet
+     act) back to you.
 
 ## Architecture
 
@@ -39,13 +58,21 @@ js/
   worldgen.js         Procedural continent generation (biomes, rivers, resources, spawns)
   biomes.js           11 biome definitions + inline-SVG tile art generators
   resources.js        12 resource definitions + inline-SVG badge icons
-  kingdoms.js         12 playable kingdoms, bonuses, inline-SVG crest emblems
-  units.js            18 units across 4 tiers, stats, inline-SVG token art
+  kingdoms.js         12 playable kingdoms, bonuses (+ numeric `effects`), inline-SVG crests
+  kingdomEffects.js   Applies each kingdom's numeric bonus to combat/movement/city economy
+  units.js            18 units across 4 tiers, stats, tech/resource gates, inline-SVG art
+  buildings.js        8 city improvements, cost/effects, tech gates, inline-SVG icon badges
+  tech.js             18-tech, 4-branch tech tree (Core/Military/Economic/Naval) + unlock logic
+  wonders.js          8 world Wonders, tech-gated, one-per-world, empire-wide bonuses
+  cities.js           City founding, territory, full yields (food/prod/gold/culture/science), growth
+  cityArt.js          Inline-SVG settlement marker, tiered by population (hamlet/town/city)
+  combat.js           Attack resolution (terrain + kingdom bonuses), unit death, city capture
+  movement.js         Dijkstra reachable-tiles & path for per-biome movement cost
   fog.js              Per-player fog of war (unexplored / remembered / visible)
-  state.js            Players, unit instances, turn order, spawning, movement
+  state.js            Players, units, cities, research, turn order, combat/production orchestration
   camera.js           Pan/zoom camera, screen<->world transforms
-  renderer.js         Canvas 2D renderer (tiles, resources, units, fog, selection)
-  main.js             App bootstrap: kingdom select, input handling, HUD wiring
+  renderer.js         Canvas 2D renderer (tiles, resources, units, cities, fog, selection)
+  main.js             App bootstrap: kingdom select, input, city/tech/production/growth UI, combat
 ```
 
 All visual art (tiles, resource badges, kingdom crests, unit tokens, app icon)
@@ -77,19 +104,6 @@ frame language rather than default browser chrome.
 
 ## Roadmap (remaining stages)
 
-**Stage 2 — Cities, Units & Combat**
-City founding (Villager → city), population growth tied to Food/Housing/
-Happiness, improvement selection on growth (Granary, Market, Temple, etc.),
-full unit production queue, movement cost by biome (not flat range), melee/
-ranged combat resolution, unit death/capture, borders expanding from cities.
-
-**Stage 3 — Technology & Progression**
-Full tech tree (Agriculture -> ... -> Architecture, plus Military/Economic/
-Naval branches) with UI, tech unlocking units/buildings/wonders, Wonders
-(Great Pyramid, Great Mosque, Great Library, etc.) with permanent empire
-bonuses, kingdom-specific bonus hooks (the `bonus` text on each kingdom
-becomes real modifiers).
-
 **Stage 4 — AI Opponents & Diplomacy**
 Turn-driven AI (multiple difficulty levels: expansion/military/economic
 heuristics), diplomacy actions (alliances, trade agreements, military pacts,
@@ -104,11 +118,27 @@ a fictional-kingdoms campaign mode.
 
 ## Known limitations of this build
 
-- AI players exist as data (players 2-4) but take no actions; "End Turn"
-  currently just cycles turns silently back to the human.
-- No combat resolution yet — units can move onto empty passable land only.
-- No cities, production, or tech yet.
+- AI players research technology and grow/produce their cities
+  automatically (auto-picking the first growth-improvement option and a
+  random available tech), but they never queue anything into production
+  themselves, move units, attack, or found new cities. Real AI
+  decision-making is Stage 4.
+- Production queues are never auto-filled for AI cities, so AI production
+  capacity currently accumulates without being spent — visually harmless,
+  but it means AI empires won't grow militarily until Stage 4 gives them
+  a production strategy too.
+- No happiness/security mechanical effects yet (tracked on `City`, and
+  Yoruba/Benin's happiness-related bonuses feed the number, but nothing
+  consumes it) — unrest, rebellion, etc. land in a later stage alongside
+  religion/culture victory tracking.
+- Wonder effects are recomputed fresh each turn from `player.wonders`,
+  which is simple and correct but means there's no UI yet listing "your
+  empire's active bonuses" in one place — you can see them city-by-city
+  in the improvements row.
+- Unit stacking is disallowed (one unit per tile) and there's no unit
+  "advance after kill" — the attacker stays put even if the defender dies.
 - `manifest.json` references only an SVG icon; add PNG 192/512 icons before
   shipping to app stores / for best Android home-screen support.
 - No service worker yet, so offline play isn't wired up despite the PWA
   manifest scaffold being present.
+- No save/load (IndexedDB) yet — refreshing the page loses your game.

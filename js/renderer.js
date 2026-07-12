@@ -4,6 +4,7 @@ import { axialToPixel, hexCorners, HEX_SIZE } from './hex.js';
 import { getBiomeImage } from './biomes.js';
 import { getResourceImage } from './resources.js';
 import { getUnitImage } from './units.js';
+import { getCityImage, tierForPopulation } from './cityArt.js';
 import { KINGDOMS } from './kingdoms.js';
 
 export class Renderer {
@@ -55,6 +56,21 @@ export class Renderer {
 
       if (tile.owner) {
         this._drawOwnerBorder(tile, screen, drawSize, state);
+      }
+
+      if (tile.cityId && visState === 2) {
+        const city = state.cities.get(tile.cityId);
+        if (city) {
+          const owner = state.players.get(city.owner);
+          const ring = owner ? KINGDOMS[owner.kingdomId].color : '#F1CE73';
+          const img = getCityImage(tierForPopulation(city.population), ring);
+          const w = drawSize * 1.5, h = drawSize * 1.15;
+          if (img.complete) ctx.drawImage(img, screen.x - w / 2, screen.y - h * 0.62, w, h);
+          ctx.font = `${Math.max(10, drawSize * 0.34)}px Mukta, sans-serif`;
+          ctx.fillStyle = '#F6EFDD';
+          ctx.textAlign = 'center';
+          ctx.fillText(city.name, screen.x, screen.y + drawSize * 0.62);
+        }
       }
 
       if (visState === 1) {

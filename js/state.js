@@ -1,9 +1,13 @@
-// state.js — Core mutable game state (players, units, turns) and basic turn/economy logic
+// state.js — Core mutable game state (players, units, cities, turns) and turn/economy orchestration
 
 import { KINGDOMS } from './kingdoms.js';
 import { UNITS } from './units.js';
 import { hexKey, neighbors } from './hex.js';
 import { FogOfWar } from './fog.js';
+import { foundCity as foundCityImpl, queueProduction as queueProductionImpl, processCityTurn, applyGrowthChoice as applyGrowthChoiceImpl, isValidCitySite } from './cities.js';
+import { resolveAttack, canAttack, tryCaptureCity } from './combat.js';
+import { getEffectiveMove } from './kingdomEffects.js';
+import { TECHS, isTechAvailable } from './tech.js';
 
 let _uid = 1;
 function nextId(prefix) { return `${prefix}_${_uid++}`; }
@@ -17,6 +21,10 @@ export class Player {
     this.unitIds = new Set();
     this.cityIds = new Set();
     this.technologies = new Set();
+    this.currentResearch = null;
+    this.researchProgress = 0;
+    this.bankedScience = 0;
+    this.wonders = new Set();
     this.culture = 0;
     this.score = 0;
     this.alive = true;
@@ -50,6 +58,7 @@ export class GameState {
     this.activePlayerId = null;
     this.fog = new FogOfWar();
     this.playerOrder = [];
+    this.builtWonders = new Set();
   }
 
   addPlayer(kingdomId, isHuman = false) {
@@ -67,6 +76,7 @@ export class GameState {
     this.players.get(ownerId).unitIds.add(unit.instanceId);
     const tile = this.world.tiles.get(hexKey(q, r));
     if (tile) tile.unitId = unit.instanceId;
+    unit.movesLeft = getEffectiveMove(this, unit);
     return unit;
   }
 
@@ -76,7 +86,14 @@ export class GameState {
     return this.units.get(tile.unitId) || null;
   }
 
-  moveUnit(unit, q, r) {
+  cityAt(q, r) {
+    const tile = this.world.tiles.get(hexKey(q, r));
+    if (!tile || !tile.cityId) return null;
+    return this.cities.get(tile.cityId) || null;
+  }
+
+  /** Move a unit to a destination, deducting the given movement-point cost (from Dijkstra pathfinding). */
+  moveUnitTo(unit, q, r, cost) {
     const fromTile = this.world.tiles.get(hexKey(unit.q, unit.r));
     const toTile = this.world.tiles.get(hexKey(q, r));
     if (!toTile || !toTile.biome) return false;
@@ -84,9 +101,57 @@ export class GameState {
     if (fromTile) fromTile.unitId = null;
     unit.q = q; unit.r = r;
     toTile.unitId = unit.instanceId;
+    unit.movesLeft = Math.max(0, unit.movesLeft - cost);
     this.refreshFogForPlayer(unit.owner);
     return true;
   }
+
+  // --- cities -------------------------------------------------------------
+
+  canFoundCityAt(player, q, r) {
+    return isValidCitySite(this.world, this.cities, q, r, 3);
+  }
+
+  foundCity(player, q, r) {
+    return foundCityImpl(this, player, q, r);
+  }
+
+  queueProduction(city, kind, id) {
+    return queueProductionImpl(this, city, kind, id);
+  }
+
+  applyGrowthChoice(city, buildingId) {
+    applyGrowthChoiceImpl(city, buildingId);
+  }
+
+  // --- technology -----------------------------------------------------------
+
+  setResearch(player, techId) {
+    if (!isTechAvailable(player.technologies, techId) && !player.technologies.has(techId)) {
+      // allow re-selection only if truly available (prereqs met, not already known)
+      if (!TECHS[techId] || !TECHS[techId].req.every(r => player.technologies.has(r))) return false;
+    }
+    if (player.technologies.has(techId)) return false;
+    player.currentResearch = techId;
+    return true;
+  }
+
+  // --- combat ---------------------------------------------------------------
+
+  canAttack(attacker, q, r) {
+    return canAttack(this, attacker, q, r);
+  }
+
+  attack(attacker, q, r) {
+    const defender = this.unitsAt(q, r);
+    if (!defender) return null;
+    const result = resolveAttack(this, attacker, defender);
+    if (result.defenderDied) tryCaptureCity(this, attacker, q, r);
+    this.refreshFogForPlayer(attacker.owner);
+    return result;
+  }
+
+  // --- fog ------------------------------------------------------------------
 
   refreshFogForPlayer(playerId) {
     const player = this.players.get(playerId);
@@ -121,15 +186,30 @@ export class GameState {
     this.refreshAllFog();
   }
 
+  /** Ends the current player's turn: processes their cities' economy, then advances to the next player. */
   endTurn() {
+    const endingPlayerId = this.activePlayerId;
+    const endingPlayer = this.players.get(endingPlayerId);
+    const events = [];
+    if (endingPlayer) {
+      for (const cid of endingPlayer.cityIds) {
+        const city = this.cities.get(cid);
+        if (city) events.push(...processCityTurn(this, city));
+      }
+      this.refreshFogForPlayer(endingPlayerId);
+    }
+
     const idx = this.playerOrder.indexOf(this.activePlayerId);
     const nextIdx = (idx + 1) % this.playerOrder.length;
     if (nextIdx === 0) this.turn += 1;
     this.activePlayerId = this.playerOrder[nextIdx];
-    for (const uid of this.players.get(this.activePlayerId).unitIds) {
-      const u = this.units.get(uid);
-      if (u) { u.movesLeft = u.def.move; u.hasActed = false; }
+    const nextPlayer = this.players.get(this.activePlayerId);
+    if (nextPlayer) {
+      for (const uid of nextPlayer.unitIds) {
+        const u = this.units.get(uid);
+        if (u) { u.movesLeft = getEffectiveMove(this, u); u.hasActed = false; }
+      }
     }
-    return this.activePlayerId;
+    return { nextPlayerId: this.activePlayerId, events, endingPlayerId };
   }
 }

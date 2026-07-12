@@ -1,13 +1,19 @@
-// main.js — App bootstrap: kingdom select, world gen, camera/input, render loop, basic turn UI
+// main.js — App bootstrap: kingdom select, world gen, camera/input, render loop, city/combat UI
 
 import { generateWorld } from './worldgen.js';
 import { GameState } from './state.js';
 import { Camera } from './camera.js';
 import { Renderer } from './renderer.js';
-import { axialToPixel, pixelToAxial, hexDistance, hexesInRange, hexKey } from './hex.js';
+import { axialToPixel, pixelToAxial, hexKey } from './hex.js';
 import { KINGDOMS, getKingdomList } from './kingdoms.js';
 import { BIOMES } from './biomes.js';
 import { UNITS } from './units.js';
+import { BUILDINGS } from './buildings.js';
+import { computeReachable, reconstructPath } from './movement.js';
+import { TECHS, BRANCH_LABELS, isTechAvailable, availableTechs, isUnitUnlocked, isBuildingUnlocked } from './tech.js';
+import { WONDERS, isWonderAvailable } from './wonders.js';
+import { computeCityYields, cityHasResource } from './cities.js';
+import { getEffectiveCombatStats } from './kingdomEffects.js';
 
 const canvas = document.getElementById('game-canvas');
 const camera = new Camera(canvas);
@@ -16,9 +22,14 @@ const renderer = new Renderer(canvas, camera);
 let state = null;
 let humanPlayerId = null;
 let selectedUnit = null;
+let selectedCity = null;
 let dragging = false;
 let lastPointer = null;
 let pointerMoved = false;
+let reachableMap = new Map(); // hexKey -> {q,r,cost,from}
+const pendingGrowthChoices = [];
+
+// ---------- Kingdom selection screen ----------
 
 function buildKingdomSelect() {
   const grid = document.getElementById('kingdom-grid');
@@ -56,6 +67,12 @@ function startGame(kingdomId) {
   state.activePlayerId = humanPlayerId;
   state.initializeStartingUnits();
 
+  state.setResearch(human, 'agriculture');
+  for (const pid of state.playerOrder) {
+    if (pid === humanPlayerId) continue;
+    autopickResearch(state.players.get(pid));
+  }
+
   const startPos = world.startingPositions[0];
   const center = axialToPixel(startPos.q, startPos.r);
   renderer.resize();
@@ -64,13 +81,18 @@ function startGame(kingdomId) {
 
   updateResourceBar();
   updateKingdomBadge();
+  updateResearchPill();
   requestAnimationFrame(loop);
 }
+
+// ---------- Render loop ----------
 
 function loop() {
   renderer.render(state, humanPlayerId);
   requestAnimationFrame(loop);
 }
+
+// ---------- Input: pan / zoom / select ----------
 
 function setupInput() {
   canvas.addEventListener('pointerdown', (e) => {
@@ -91,9 +113,7 @@ function setupInput() {
 
   canvas.addEventListener('pointerup', (e) => {
     dragging = false;
-    if (!pointerMoved) {
-      handleTileClick(e.clientX, e.clientY);
-    }
+    if (!pointerMoved) handleTileClick(e.clientX, e.clientY);
   });
 
   canvas.addEventListener('wheel', (e) => {
@@ -128,12 +148,18 @@ function touchDist(touches) {
   return Math.sqrt(dx * dx + dy * dy);
 }
 
+function round1(n) {
+  return Math.round(n * 10) / 10;
+}
+
+// ---------- Tile / unit / city interaction ----------
+
 function handleTileClick(clientX, clientY) {
   const rect = canvas.getBoundingClientRect();
   const sx = clientX - rect.left;
   const sy = clientY - rect.top;
-  const world = camera.screenToWorld(sx, sy);
-  const axial = pixelToAxial(world.x, world.y);
+  const worldPt = camera.screenToWorld(sx, sy);
+  const axial = pixelToAxial(worldPt.x, worldPt.y);
   const tile = state.world.tiles.get(hexKey(axial.q, axial.r));
   if (!tile || !tile.biome) return;
 
@@ -141,66 +167,327 @@ function handleTileClick(clientX, clientY) {
   if (visState === 0) return;
 
   const unitHere = state.unitsAt(tile.q, tile.r);
+  const cityHere = state.cityAt(tile.q, tile.r);
+  const key = hexKey(tile.q, tile.r);
 
-  if (selectedUnit && renderer.reachable.has(hexKey(tile.q, tile.r)) && !unitHere) {
-    const cost = hexDistance(selectedUnit, tile);
-    state.moveUnit(selectedUnit, tile.q, tile.r);
-    selectedUnit.movesLeft = Math.max(0, selectedUnit.movesLeft - cost);
-    renderer.reachable.clear();
-    if (selectedUnit.movesLeft <= 0) selectedUnit = null;
-    else computeReachable(selectedUnit);
+  // 1) Attack?
+  if (selectedUnit && unitHere && unitHere.owner !== humanPlayerId && state.canAttack(selectedUnit, tile.q, tile.r)) {
+    const result = state.attack(selectedUnit, tile.q, tile.r);
+    logCombat(selectedUnit, unitHere, result);
+    if (result.attackerDied || selectedUnit.movesLeft <= 0 || selectedUnit.hasActed) {
+      clearSelection();
+    } else {
+      computeUnitReachable(selectedUnit);
+    }
     renderer.selected = { q: tile.q, r: tile.r };
-    updateTileInfo(tile, unitHere);
+    refreshSidePanels(tile, unitHere, cityHere);
     return;
   }
 
-  renderer.selected = { q: tile.q, r: tile.r };
+  // 2) Move?
+  if (selectedUnit && !unitHere && reachableMap.has(key)) {
+    const path = reconstructPath(reachableMap, key);
+    const dest = path[path.length - 1];
+    const info = reachableMap.get(key);
+    state.moveUnitTo(selectedUnit, dest.q, dest.r, info.cost);
+    if (selectedUnit.movesLeft > 0) computeUnitReachable(selectedUnit);
+    else clearSelection(false);
+    renderer.selected = { q: tile.q, r: tile.r };
+    refreshSidePanels(tile, selectedUnit, cityHere);
+    return;
+  }
 
-  if (unitHere && unitHere.owner === humanPlayerId && unitHere.movesLeft > 0) {
+  // 3) New selection
+  renderer.selected = { q: tile.q, r: tile.r };
+  if (unitHere && unitHere.owner === humanPlayerId && unitHere.movesLeft > 0 && !unitHere.hasActed) {
     selectedUnit = unitHere;
-    computeReachable(unitHere);
+    computeUnitReachable(unitHere);
   } else {
     selectedUnit = null;
+    reachableMap = new Map();
     renderer.reachable.clear();
   }
 
-  updateTileInfo(tile, unitHere);
+  selectedCity = (cityHere && cityHere.owner === humanPlayerId) ? cityHere : null;
+  refreshSidePanels(tile, unitHere, cityHere);
 }
 
-function computeReachable(unit) {
+function computeUnitReachable(unit) {
+  const owner = state.players.get(unit.owner);
+  reachableMap = computeReachable(state.world, unit, unit.movesLeft, owner);
+  renderer.reachable = new Set(reachableMap.keys());
+}
+
+function clearSelection(clearRenderer = true) {
+  selectedUnit = null;
+  reachableMap = new Map();
   renderer.reachable.clear();
-  const range = unit.movesLeft;
-  const candidates = hexesInRange({ q: unit.q, r: unit.r }, range);
-  for (const c of candidates) {
-    if (c.q === unit.q && c.r === unit.r) continue;
-    const tile = state.world.tiles.get(hexKey(c.q, c.r));
-    if (!tile || !tile.biome) continue;
-    if (tile.biome === 'ocean' || tile.biome === 'coast') continue;
-    if (tile.unitId) continue;
-    renderer.reachable.add(hexKey(c.q, c.r));
-  }
+  if (clearRenderer) renderer.selected = null;
+}
+
+// ---------- Side panels: tile info + found-city action + city panel ----------
+
+function refreshSidePanels(tile, unit, city) {
+  updateTileInfo(tile, unit);
+  updateCityPanel(city && city.owner === humanPlayerId ? city : null);
 }
 
 function updateTileInfo(tile, unit) {
   const panel = document.getElementById('tile-info');
   const biome = BIOMES[tile.biome];
   let html = `<div class="tile-info-title">${biome.name}</div>`;
-  html += `<div class="tile-info-row">Movement cost: ${biome.moveCost}</div>`;
+  html += `<div class="tile-info-row">Move cost: ${biome.moveCost}</div>`;
   const yields = Object.entries(biome.yields || {}).map(([k, v]) => `${k} +${v}`).join(' \u00b7 ');
   if (yields) html += `<div class="tile-info-row">${yields}</div>`;
   if (tile.resource) html += `<div class="tile-info-row resource-row">Resource: ${tile.resource}</div>`;
   if (tile.isRiver) html += `<div class="tile-info-row">River tile</div>`;
+
   if (unit) {
     const def = UNITS[unit.type];
     const owner = state.players.get(unit.owner);
     const kname = KINGDOMS[owner.kingdomId].name;
+    const eff = getEffectiveCombatStats(state, unit, { attacking: true });
     html += `<hr/><div class="tile-info-title">${def.name}</div>`;
     html += `<div class="tile-info-row">${kname} \u2014 HP ${unit.hp}/${unit.maxHp}</div>`;
-    html += `<div class="tile-info-row">ATK ${def.attack} \u00b7 DEF ${def.defense} \u00b7 MOV ${unit.movesLeft}/${def.move}</div>`;
+    html += `<div class="tile-info-row">ATK ${round1(eff.attack)} \u00b7 DEF ${round1(eff.defense)} \u00b7 MOV ${unit.movesLeft}/${def.move}${eff.range > 1 ? ` \u00b7 RNG ${eff.range}` : ''}</div>`;
+
+    if (unit.type === 'villager' && unit.owner === humanPlayerId && unit.movesLeft > 0) {
+      const canFound = state.canFoundCityAt(state.players.get(humanPlayerId), tile.q, tile.r);
+      html += `<button id="found-city-btn" class="panel-action-btn" ${canFound ? '' : 'disabled'}>${canFound ? 'Found City' : 'Too close to another city'}</button>`;
+    }
   }
   panel.innerHTML = html;
   panel.classList.remove('hidden');
+
+  const foundBtn = document.getElementById('found-city-btn');
+  if (foundBtn) {
+    foundBtn.addEventListener('click', () => {
+      const player = state.players.get(humanPlayerId);
+      const city = state.foundCity(player, tile.q, tile.r);
+      if (city) {
+        logEvent(`You founded ${city.name}.`);
+        clearSelection();
+        renderer.selected = { q: tile.q, r: tile.r };
+        selectedCity = city;
+        refreshSidePanels(tile, null, city);
+        updateResourceBar();
+      }
+    });
+  }
 }
+
+function updateCityPanel(city) {
+  const panel = document.getElementById('city-panel');
+  if (!city) { panel.classList.add('hidden'); panel.innerHTML = ''; return; }
+
+  const yields = computeCityYields(state, city);
+  const growthPct = Math.min(100, Math.round((city.foodStored / city.growthThreshold) * 100));
+  const queueHtml = city.productionQueue.length
+    ? city.productionQueue.slice(0, 3).map((item, i) => {
+        const def = item.kind === 'unit' ? UNITS[item.id] : item.kind === 'wonder' ? WONDERS[item.id] : BUILDINGS[item.id];
+        const pct = Math.min(100, Math.round((item.progress / item.cost) * 100));
+        return `<div class="queue-item ${i === 0 ? 'active' : ''}">
+          <span>${def.name}${item.kind === 'wonder' ? ' \u2726' : ''}</span>
+          ${i === 0 ? `<div class="mini-bar"><div class="mini-bar-fill" style="width:${pct}%"></div></div>` : ''}
+        </div>`;
+      }).join('')
+    : `<div class="queue-item empty">Production queue is empty</div>`;
+
+  const improvementsHtml = city.improvements.map(id => {
+    if (id.startsWith('wonder_')) {
+      const w = WONDERS[id.replace('wonder_', '')];
+      return w ? `<div class="improvement-chip" title="${w.name}">${w.icon}</div>` : '';
+    }
+    const b = BUILDINGS[id];
+    return b ? `<div class="improvement-chip" title="${b.name}">${b.icon}</div>` : '';
+  }).join('');
+
+  panel.innerHTML = `
+    <div class="city-panel-header">
+      <div class="tile-info-title">${city.name}${city.isCapital ? ' \u2605' : ''}</div>
+      <div class="tile-info-row">Population ${city.population}</div>
+    </div>
+    <div class="mini-bar"><div class="mini-bar-fill growth" style="width:${growthPct}%"></div></div>
+    <div class="tile-info-row small">Food ${city.foodStored}/${city.growthThreshold} \u00b7 +${yields.gold}g \u00b7 +${yields.production}p \u00b7 +${yields.science}sci \u00b7 +${yields.culture}cul</div>
+    <div class="improvement-row">${improvementsHtml || '<span class="tile-info-row small">No improvements yet</span>'}</div>
+    <hr/>
+    <div class="tile-info-title small-title">Production</div>
+    <div class="production-queue">${queueHtml}</div>
+    <button id="add-production-btn" class="panel-action-btn">Add to Queue</button>
+  `;
+  panel.classList.remove('hidden');
+
+  document.getElementById('add-production-btn').addEventListener('click', () => openProductionMenu(city));
+}
+
+// ---------- Modal: production menu ----------
+
+function openProductionMenu(city) {
+  const overlay = document.getElementById('modal-overlay');
+  const content = document.getElementById('modal-content');
+  const player = state.players.get(city.owner);
+
+  const buyableUnits = Object.values(UNITS).filter(u => u.tier !== 'legendary' || player.technologies.has(u.techReq));
+  const availableBuildings = Object.values(BUILDINGS).filter(b =>
+    b.id !== 'capital_seat' && !city.improvements.includes(b.id) && (!b.coastalOnly || city.isCoastal)
+  );
+  const availableWonders = Object.values(WONDERS).filter(w => isWonderAvailable(state, player, w.id));
+
+  const unitCards = buyableUnits.map(u => {
+    const techOk = isUnitUnlocked(u, player.technologies);
+    const resOk = cityHasResource(state, city, u.resourceReq);
+    const locked = !techOk || !resOk;
+    const reason = !techOk ? `Requires ${TECHS[u.techReq] ? TECHS[u.techReq].name : u.techReq}` : !resOk ? `Requires ${u.resourceReq} in territory` : '';
+    return `<button class="choice-card ${locked ? 'locked' : ''}" ${locked ? 'disabled' : ''} data-kind="unit" data-id="${u.id}">
+      <div class="choice-icon">${u.svg}</div>
+      <div class="choice-name">${u.name}</div>
+      <div class="choice-desc">${locked ? reason : Object.entries(u.cost).map(([k, v]) => `${k} ${v}`).join(' \u00b7 ')}</div>
+    </button>`;
+  }).join('');
+
+  const buildingCards = availableBuildings.map(b => {
+    const locked = !isBuildingUnlocked(b.id, player.technologies);
+    return `<button class="choice-card ${locked ? 'locked' : ''}" ${locked ? 'disabled' : ''} data-kind="building" data-id="${b.id}">
+      <div class="choice-icon">${b.icon}</div>
+      <div class="choice-name">${b.name}</div>
+      <div class="choice-desc">${locked ? 'Locked \u2014 needs technology' : b.describe}</div>
+    </button>`;
+  }).join('');
+
+  const wonderCards = availableWonders.map(w => `
+    <button class="choice-card" data-kind="wonder" data-id="${w.id}">
+      <div class="choice-icon">${w.icon}</div>
+      <div class="choice-name">${w.name}</div>
+      <div class="choice-desc">${w.describe}</div>
+    </button>`).join('');
+
+  content.innerHTML = `
+    <div class="modal-title">Add to Production \u2014 ${city.name}</div>
+    <div class="modal-section-label">Units</div>
+    <div class="choice-grid">${unitCards}</div>
+    <div class="modal-section-label">Buildings</div>
+    <div class="choice-grid">${buildingCards || '<div class="tile-info-row small">All available improvements built.</div>'}</div>
+    <div class="modal-section-label">Wonders</div>
+    <div class="choice-grid">${wonderCards || '<div class="tile-info-row small">No wonders unlocked yet \u2014 research more technology.</div>'}</div>
+    <button id="modal-close-btn" class="panel-action-btn modal-close">Close</button>
+  `;
+
+  content.querySelectorAll('.choice-card:not(.locked)').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.queueProduction(city, btn.dataset.kind, btn.dataset.id);
+      closeModal();
+      updateCityPanel(city);
+    });
+  });
+  document.getElementById('modal-close-btn').addEventListener('click', closeModal);
+
+  overlay.classList.remove('hidden');
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.add('hidden');
+  document.getElementById('modal-content').innerHTML = '';
+}
+
+// ---------- Modal: growth choice ----------
+
+function showNextGrowthModal() {
+  if (!pendingGrowthChoices.length) { closeModal(); runAITurns(); return; }
+  const event = pendingGrowthChoices[0];
+  const city = state.cities.get(event.cityId);
+  const overlay = document.getElementById('modal-overlay');
+  const content = document.getElementById('modal-content');
+
+  if (!city || !event.choices.length) {
+    pendingGrowthChoices.shift();
+    showNextGrowthModal();
+    return;
+  }
+
+  const cards = event.choices.map(id => {
+    const b = BUILDINGS[id];
+    return `<button class="choice-card" data-id="${id}">
+      <div class="choice-icon">${b.icon}</div>
+      <div class="choice-name">${b.name}</div>
+      <div class="choice-desc">${b.describe}</div>
+    </button>`;
+  }).join('');
+
+  content.innerHTML = `
+    <div class="modal-title">${city.name} grew to population ${event.population}!</div>
+    <div class="modal-section-label">Choose a free improvement</div>
+    <div class="choice-grid">${cards}</div>
+  `;
+  content.querySelectorAll('.choice-card').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.applyGrowthChoice(city, btn.dataset.id);
+      logEvent(`${city.name} built a ${BUILDINGS[btn.dataset.id].name}.`);
+      pendingGrowthChoices.shift();
+      if (selectedCity === city) updateCityPanel(city);
+      showNextGrowthModal();
+    });
+  });
+  overlay.classList.remove('hidden');
+}
+
+// ---------- Event log ----------
+
+function logEvent(message) {
+  const log = document.getElementById('event-log');
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  entry.textContent = message;
+  log.appendChild(entry);
+  while (log.children.length > 4) log.removeChild(log.firstChild);
+  setTimeout(() => entry.classList.add('fade'), 4000);
+  setTimeout(() => entry.remove(), 5000);
+}
+
+function logCombat(attacker, defenderUnit, result) {
+  const aName = UNITS[attacker.type].name;
+  const dName = UNITS[defenderUnit.type].name;
+  if (result.defenderDied) logEvent(`Your ${aName} defeated the enemy ${dName}!`);
+  else if (result.attackerDied) logEvent(`Your ${aName} was destroyed attacking ${dName}.`);
+  else logEvent(`Your ${aName} struck the enemy ${dName} (-${result.dmgToDefender} HP).`);
+}
+
+function cityName(cityId) {
+  const c = state.cities.get(cityId);
+  return c ? c.name : 'A city';
+}
+
+function handleCityEvents(events, isHuman) {
+  for (const e of events) {
+    if (e.type === 'growth') {
+      if (isHuman) {
+        pendingGrowthChoices.push(e);
+      } else {
+        const city = state.cities.get(e.cityId);
+        if (city && e.choices.length) state.applyGrowthChoice(city, e.choices[0]);
+      }
+    } else if (e.type === 'building_complete' && isHuman) {
+      logEvent(`${cityName(e.cityId)} completed a ${BUILDINGS[e.buildingId].name}.`);
+    } else if (e.type === 'unit_complete' && isHuman) {
+      logEvent(`${cityName(e.cityId)} produced a ${UNITS[e.unitId].name}.`);
+    } else if (e.type === 'wonder_complete') {
+      logEvent(`${isHuman ? 'You' : 'A rival'} completed the ${WONDERS[e.wonderId].name}!`);
+    } else if (e.type === 'tech_complete') {
+      if (isHuman) {
+        logEvent(`Research complete: ${TECHS[e.techId].name}.`);
+        updateResearchPill();
+      }
+    }
+}
+
+function autopickResearch(player) {
+  if (player.currentResearch) return;
+  const options = availableTechs(player.technologies);
+  if (!options.length) return;
+  const pick = options[Math.floor(Math.random() * options.length)];
+  state.setResearch(player, pick.id);
+}
+
+// ---------- Turn cycle ----------
 
 function updateResourceBar() {
   const player = state.players.get(humanPlayerId);
@@ -215,17 +502,100 @@ function updateKingdomBadge() {
   document.getElementById('kingdom-badge').innerHTML = `<div class="badge-emblem">${k.emblem}</div><div class="badge-text"><div class="badge-name">${k.name}</div><div class="badge-turn">Turn <span id="turn-counter">${state.turn}</span></div></div>`;
 }
 
-document.getElementById('end-turn-btn').addEventListener('click', () => {
-  selectedUnit = null;
-  renderer.reachable.clear();
-  let next = state.endTurn();
-  while (next !== humanPlayerId) {
-    next = state.endTurn();
+function updateTurnCounter() {
+  const el = document.getElementById('turn-counter');
+  if (el) el.textContent = state.turn;
+}
+
+function runAITurns() {
+  while (state.activePlayerId !== humanPlayerId) {
+    const { events, endingPlayerId } = state.endTurn();
+    handleCityEvents(events, false);
+    const endedPlayer = state.players.get(endingPlayerId);
+    if (endedPlayer && !endedPlayer.isHuman) autopickResearch(endedPlayer);
   }
   updateResourceBar();
-  const tc = document.getElementById('turn-counter');
-  if (tc) tc.textContent = state.turn;
+  updateTurnCounter();
+}
+
+// ---------- Research pill + tech tree modal ----------
+
+function updateResearchPill() {
+  const player = state.players.get(humanPlayerId);
+  const pill = document.getElementById('research-btn');
+  if (!player.currentResearch) {
+    pill.innerHTML = `<span>Choose Research</span>`;
+    return;
+  }
+  const tech = TECHS[player.currentResearch];
+  const pct = Math.min(100, Math.round((player.researchProgress / tech.cost) * 100));
+  pill.innerHTML = `<span>${tech.name}</span><div class="pill-bar"><div class="pill-bar-fill" style="width:${pct}%"></div></div>`;
+}
+
+function openTechTree() {
+  const overlay = document.getElementById('modal-overlay');
+  const content = document.getElementById('modal-content');
+  const player = state.players.get(humanPlayerId);
+
+  const branches = ['core', 'military', 'economic', 'naval'];
+  const columns = branches.map(branch => {
+    const techsInBranch = Object.values(TECHS).filter(t => t.branch === branch);
+    const cards = techsInBranch.map(t => {
+      const completed = player.technologies.has(t.id);
+      const researching = player.currentResearch === t.id;
+      const locked = !completed && !researching && !isTechAvailable(player.technologies, t.id);
+      const stateClass = completed ? 'completed' : researching ? 'researching' : locked ? 'locked' : '';
+      return `<button class="tech-card ${stateClass}" ${locked ? 'disabled' : ''} data-id="${t.id}">
+        <div class="tech-icon">${t.icon}</div>
+        <div class="tech-text">
+          <div class="tech-name">${t.name}${completed ? ' \u2713' : ''}</div>
+          <div class="tech-cost">${completed ? 'Researched' : `${t.cost} science`}</div>
+        </div>
+      </button>`;
+    }).join('');
+    return `<div class="tech-branch-col">
+      <div class="tech-branch-title">${BRANCH_LABELS[branch]}</div>
+      ${cards}
+    </div>`;
+  }).join('');
+
+  content.innerHTML = `
+    <div class="modal-title">Technology \u2014 ${player.researchProgress}/${player.currentResearch ? TECHS[player.currentResearch].cost : '\u2014'} science toward current research</div>
+    <div class="tech-branches">${columns}</div>
+    <button id="modal-close-btn" class="panel-action-btn modal-close">Close</button>
+  `;
+
+  content.querySelectorAll('.tech-card:not(.locked):not(.completed)').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.setResearch(player, btn.dataset.id);
+      updateResearchPill();
+      openTechTree();
+    });
+  });
+  document.getElementById('modal-close-btn').addEventListener('click', closeModal);
+
+  overlay.classList.remove('hidden');
+}
+
+document.getElementById('research-btn').addEventListener('click', openTechTree);
+
+document.getElementById('end-turn-btn').addEventListener('click', () => {
+  clearSelection();
+  selectedCity = null;
+  document.getElementById('city-panel').classList.add('hidden');
+  document.getElementById('tile-info').classList.add('hidden');
+
+  const { events } = state.endTurn(); // human's own turn ends; their cities process
+  handleCityEvents(events, true);
+  updateResourceBar();
+  updateTurnCounter();
+  updateResearchPill();
+
+  if (pendingGrowthChoices.length) showNextGrowthModal();
+  else runAITurns();
 });
+
+// ---------- boot ----------
 
 buildKingdomSelect();
 setupInput();
