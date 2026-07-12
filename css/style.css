@@ -1,0 +1,248 @@
+/* style.css — Cradle's Conquest visual system
+   Palette: terracotta clay, savanna gold, adire indigo, baobab bark, kente green.
+   Display face: Yeseva One (bold, ornamental). UI/body: Mukta (warm, humanist, readable). */
+
+:root {
+  --clay: #B5502D;
+  --clay-dark: #8C3A1F;
+  --gold: #D8A93A;
+  --gold-light: #F1CE73;
+  --indigo: #223A5E;
+  --indigo-deep: #152941;
+  --bark: #4A3427;
+  --bark-light: #6B4B33;
+  --sand: #EDE0C0;
+  --sand-dark: #D8C594;
+  --kente: #2E6B4F;
+  --kente-dark: #1F4B37;
+  --red: #8C2F2F;
+  --ivory: #F6EFDD;
+  --ink: #1B120A;
+
+  --font-display: 'Yeseva One', 'Georgia', serif;
+  --font-body: 'Mukta', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  --radius-md: 10px;
+  --radius-lg: 16px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0; padding: 0;
+  width: 100%; height: 100%;
+  background: var(--ink);
+  color: var(--ivory);
+  font-family: var(--font-body);
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.hidden { display: none !important; }
+
+/* ============ START SCREEN ============ */
+#start-screen {
+  position: relative;
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column;
+  align-items: center;
+  overflow-y: auto;
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(216,169,58,0.18), transparent 55%),
+    radial-gradient(ellipse at 80% 100%, rgba(46,107,79,0.20), transparent 55%),
+    linear-gradient(180deg, #2A1B10 0%, #1B120A 60%);
+}
+
+.start-overlay-pattern {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(45deg, rgba(216,169,58,0.05) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(216,169,58,0.05) 25%, transparent 25%);
+  background-size: 40px 40px;
+  pointer-events: none;
+}
+
+.start-header {
+  position: relative;
+  text-align: center;
+  padding: 48px 20px 20px;
+}
+
+.game-title {
+  font-family: var(--font-display);
+  font-size: clamp(2.2rem, 6vw, 3.6rem);
+  color: var(--gold-light);
+  margin: 0;
+  letter-spacing: 0.5px;
+  text-shadow: 0 3px 0 var(--clay-dark), 0 6px 14px rgba(0,0,0,0.5);
+}
+
+.game-subtitle {
+  font-size: 1rem;
+  color: var(--sand-dark);
+  margin: 10px 0 0;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.start-body {
+  position: relative;
+  width: 100%;
+  max-width: 1100px;
+  padding: 10px 16px 40px;
+}
+
+.section-label {
+  font-family: var(--font-display);
+  color: var(--gold);
+  text-align: center;
+  font-size: 1.3rem;
+  font-weight: 400;
+  margin: 20px 0;
+}
+
+.kingdom-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.kingdom-card {
+  --kcolor: #D8A93A;
+  background: linear-gradient(160deg, rgba(255,255,255,0.05), rgba(0,0,0,0.25)), #2A1B10;
+  border: 2px solid rgba(216,169,58,0.25);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  display: flex; flex-direction: column; align-items: center;
+  text-align: center;
+  cursor: pointer;
+  color: var(--ivory);
+  font-family: var(--font-body);
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.kingdom-card:hover, .kingdom-card:focus-visible {
+  transform: translateY(-3px);
+  border-color: var(--kcolor);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.4), 0 0 0 1px var(--kcolor) inset;
+  outline: none;
+}
+.kingdom-card:active { transform: translateY(0); }
+
+.kingdom-emblem { width: 64px; height: 64px; margin-bottom: 10px; }
+.kingdom-emblem svg { width: 100%; height: 100%; display: block; }
+
+.kingdom-name {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  color: var(--kcolor);
+}
+.kingdom-subtitle {
+  font-size: 0.78rem;
+  color: var(--sand-dark);
+  margin: 2px 0 10px;
+  font-style: italic;
+}
+.kingdom-bonus {
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--ivory);
+  opacity: 0.85;
+}
+
+.start-footer {
+  position: relative;
+  text-align: center;
+  padding: 0 20px 30px;
+  color: var(--sand-dark);
+  font-size: 0.82rem;
+}
+
+/* ============ IN-GAME UI ============ */
+#game-ui {
+  position: relative;
+  width: 100%; height: 100%;
+}
+
+#game-canvas {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  display: block;
+  touch-action: none;
+  background: #0F1B22;
+}
+
+.hud-panel {
+  position: absolute;
+  z-index: 5;
+  background: linear-gradient(160deg, rgba(42,27,16,0.92), rgba(27,18,10,0.92));
+  border: 1.5px solid rgba(216,169,58,0.35);
+  border-radius: var(--radius-md);
+  backdrop-filter: blur(4px);
+}
+
+#top-bar {
+  top: 10px; left: 10px; right: 10px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 14px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.kingdom-badge { display: flex; align-items: center; gap: 10px; }
+.badge-emblem { width: 36px; height: 36px; }
+.badge-emblem svg { width: 100%; height: 100%; }
+.badge-name { font-family: var(--font-display); color: var(--gold-light); font-size: 0.95rem; line-height: 1.1; }
+.badge-turn { font-size: 0.72rem; color: var(--sand-dark); }
+
+.resource-bar { display: flex; gap: 14px; flex-wrap: wrap; }
+.resource-chip {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 0.85rem; font-weight: 600;
+  color: var(--ivory);
+}
+.resource-chip span { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.res-food { background: var(--red); }
+.res-wood { background: var(--bark-light); }
+.res-stone { background: #8D8474; }
+.res-gold { background: var(--gold); }
+
+#tile-info {
+  bottom: 76px; left: 10px;
+  max-width: 260px;
+  padding: 12px 14px;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+.tile-info-title { font-family: var(--font-display); color: var(--gold-light); font-size: 1rem; margin-bottom: 4px; }
+.tile-info-row { color: var(--sand); }
+.resource-row { color: var(--gold-light); font-weight: 600; }
+#tile-info hr { border: none; border-top: 1px solid rgba(216,169,58,0.3); margin: 8px 0; }
+
+#bottom-bar {
+  bottom: 10px; right: 10px; left: auto;
+  padding: 6px;
+}
+
+.end-turn-btn {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  color: var(--ink);
+  background: linear-gradient(180deg, var(--gold-light), var(--gold));
+  border: none;
+  border-radius: 8px;
+  padding: 12px 28px;
+  cursor: pointer;
+  box-shadow: 0 3px 0 var(--clay-dark), 0 6px 12px rgba(0,0,0,0.35);
+  transition: transform 0.1s ease;
+}
+.end-turn-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--clay-dark); }
+
+/* ---------- mobile tuning ---------- */
+@media (max-width: 640px) {
+  .start-header { padding: 30px 16px 10px; }
+  .kingdom-grid { grid-template-columns: repeat(2, 1fr); }
+  .kingdom-bonus { display: none; }
+  #tile-info { max-width: 200px; font-size: 0.76rem; }
+  .resource-bar { gap: 8px; }
+  .resource-chip { font-size: 0.75rem; }
+}
