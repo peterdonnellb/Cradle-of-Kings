@@ -14,6 +14,8 @@ import { TECHS, BRANCH_LABELS, isTechAvailable, availableTechs, isUnitUnlocked, 
 import { WONDERS, isWonderAvailable } from './wonders.js';
 import { computeCityYields, cityHasResource } from './cities.js';
 import { getEffectiveCombatStats } from './kingdomEffects.js';
+import { runAITurn, aiAutopickResearch } from './ai.js';
+import { militaryStrength } from './diplomacy.js';
 
 const canvas = document.getElementById('game-canvas');
 const camera = new Camera(canvas);
@@ -28,10 +30,20 @@ let lastPointer = null;
 let pointerMoved = false;
 let reachableMap = new Map(); // hexKey -> {q,r,cost,from}
 const pendingGrowthChoices = [];
+let selectedDifficulty = 'normal';
 
 // ---------- Kingdom selection screen ----------
 
 function buildKingdomSelect() {
+  const diffButtons = document.querySelectorAll('.difficulty-btn');
+  diffButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      diffButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedDifficulty = btn.dataset.difficulty;
+    });
+  });
+
   const grid = document.getElementById('kingdom-grid');
   grid.innerHTML = '';
   getKingdomList().forEach(k => {
@@ -62,7 +74,7 @@ function startGame(kingdomId) {
   const aiPool = getKingdomList().map(k => k.id).filter(id => id !== kingdomId);
   for (let i = 0; i < 3; i++) {
     const pick = aiPool.splice(Math.floor(Math.random() * aiPool.length), 1)[0];
-    state.addPlayer(pick, false);
+    state.addPlayer(pick, false, selectedDifficulty);
   }
   state.activePlayerId = humanPlayerId;
   state.initializeStartingUnits();
@@ -70,7 +82,7 @@ function startGame(kingdomId) {
   state.setResearch(human, 'agriculture');
   for (const pid of state.playerOrder) {
     if (pid === humanPlayerId) continue;
-    autopickResearch(state.players.get(pid));
+    aiAutopickResearch(state, state.players.get(pid));
   }
 
   const startPos = world.startingPositions[0];
@@ -172,8 +184,14 @@ function handleTileClick(clientX, clientY) {
 
   // 1) Attack?
   if (selectedUnit && unitHere && unitHere.owner !== humanPlayerId && state.canAttack(selectedUnit, tile.q, tile.r)) {
+    const rel = state.getRelationship(humanPlayerId, unitHere.owner);
+    if (rel.status === 'peace') {
+      const targetKingdom = KINGDOMS[state.players.get(unitHere.owner).kingdomId].name;
+      if (!window.confirm(`${targetKingdom} is at peace with you. Attacking will declare war. Continue?`)) return;
+    }
     const result = state.attack(selectedUnit, tile.q, tile.r);
     logCombat(selectedUnit, unitHere, result);
+    if (result.warDeclared) logEvent(`War declared on ${KINGDOMS[state.players.get(unitHere.owner).kingdomId].name}!`);
     if (result.attackerDied || selectedUnit.movesLeft <= 0 || selectedUnit.hasActed) {
       clearSelection();
     } else {
@@ -477,14 +495,7 @@ function handleCityEvents(events, isHuman) {
         updateResearchPill();
       }
     }
-}
-
-function autopickResearch(player) {
-  if (player.currentResearch) return;
-  const options = availableTechs(player.technologies);
-  if (!options.length) return;
-  const pick = options[Math.floor(Math.random() * options.length)];
-  state.setResearch(player, pick.id);
+  }
 }
 
 // ---------- Turn cycle ----------
@@ -509,10 +520,12 @@ function updateTurnCounter() {
 
 function runAITurns() {
   while (state.activePlayerId !== humanPlayerId) {
+    const aiPlayer = state.players.get(state.activePlayerId);
+    if (aiPlayer) runAITurn(state, aiPlayer);
     const { events, endingPlayerId } = state.endTurn();
     handleCityEvents(events, false);
     const endedPlayer = state.players.get(endingPlayerId);
-    if (endedPlayer && !endedPlayer.isHuman) autopickResearch(endedPlayer);
+    if (endedPlayer && !endedPlayer.isHuman) aiAutopickResearch(state, endedPlayer);
   }
   updateResourceBar();
   updateTurnCounter();
@@ -578,6 +591,84 @@ function openTechTree() {
 }
 
 document.getElementById('research-btn').addEventListener('click', openTechTree);
+
+// ---------- Diplomacy modal ----------
+
+function openDiplomacyModal() {
+  const overlay = document.getElementById('modal-overlay');
+  const content = document.getElementById('modal-content');
+  const human = state.players.get(humanPlayerId);
+  const myStrength = militaryStrength(state, humanPlayerId);
+
+  const cards = state.playerOrder.filter(pid => pid !== humanPlayerId).map(pid => {
+    const player = state.players.get(pid);
+    const k = KINGDOMS[player.kingdomId];
+    const rel = state.getRelationship(humanPlayerId, pid);
+    const theirStrength = Math.round(militaryStrength(state, pid));
+    const powerNote = theirStrength > myStrength * 1.3 ? 'appears stronger than you'
+      : theirStrength < myStrength * 0.7 ? 'appears weaker than you' : 'is roughly your equal';
+
+    const actions = [];
+    if (rel.status === 'war') {
+      actions.push(`<button data-action="peace" data-pid="${pid}">Propose Peace</button>`);
+    } else if (rel.status === 'peace') {
+      actions.push(`<button data-action="war" data-pid="${pid}">Declare War</button>`);
+      actions.push(`<button data-action="alliance" data-pid="${pid}">Propose Alliance</button>`);
+      actions.push(`<button data-action="marriage" data-pid="${pid}">Marriage Alliance</button>`);
+      if (!rel.tradeAgreement) actions.push(`<button data-action="trade" data-pid="${pid}">Propose Trade</button>`);
+      actions.push(`<button data-action="tribute" data-pid="${pid}">Demand Tribute</button>`);
+    } else if (rel.status === 'alliance') {
+      actions.push(`<button data-action="break" data-pid="${pid}">Break Alliance</button>`);
+      actions.push(`<button data-action="war" data-pid="${pid}">Declare War</button>`);
+    }
+
+    return `<div class="diplomacy-card">
+      <div class="diplomacy-card-header">
+        <div class="diplomacy-emblem">${k.emblem}</div>
+        <div class="diplomacy-name">${k.name}</div>
+        <div class="diplomacy-status ${rel.status}">${rel.status}${rel.tradeAgreement ? ' \u00b7 trade' : ''}</div>
+      </div>
+      <div class="tile-info-row small">${k.name} ${powerNote}.</div>
+      <div class="diplomacy-actions">${actions.join('')}</div>
+    </div>`;
+  }).join('');
+
+  content.innerHTML = `
+    <div class="modal-title">Diplomacy</div>
+    ${cards}
+    <button id="modal-close-btn" class="panel-action-btn modal-close">Close</button>
+  `;
+
+  content.querySelectorAll('.diplomacy-actions button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const pid = btn.dataset.pid;
+      const action = btn.dataset.action;
+      const kName = KINGDOMS[state.players.get(pid).kingdomId].name;
+      let result;
+      switch (action) {
+        case 'peace': result = state.proposePeace(humanPlayerId, pid); break;
+        case 'alliance': result = state.proposeAlliance(humanPlayerId, pid); break;
+        case 'marriage': result = state.proposeMarriage(humanPlayerId, pid); break;
+        case 'trade': result = state.proposeTrade(humanPlayerId, pid); break;
+        case 'tribute': {
+          const amount = Math.max(10, Math.round(militaryStrength(state, humanPlayerId) * 0.5));
+          result = state.demandTribute(humanPlayerId, pid, amount);
+          break;
+        }
+        case 'war': state.declareWar(humanPlayerId, pid); result = { accepted: true, message: `War declared on ${kName}.` }; break;
+        case 'break': state.breakAlliance(humanPlayerId, pid); result = { accepted: true, message: `Alliance with ${kName} broken.` }; break;
+      }
+      if (result) logEvent(`${kName}: ${result.message}`);
+      updateResourceBar();
+      openDiplomacyModal();
+    });
+  });
+  document.getElementById('modal-close-btn').addEventListener('click', closeModal);
+
+  overlay.classList.remove('hidden');
+}
+
+document.getElementById('diplomacy-btn').addEventListener('click', openDiplomacyModal);
 
 document.getElementById('end-turn-btn').addEventListener('click', () => {
   clearSelection();

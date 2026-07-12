@@ -438,4 +438,66 @@ html, body {
 .tech-card.locked { opacity: 0.35; cursor: not-allowed; }
 .tech-card.researching { border-color: var(--gold); background: rgba(216,169,58,0.12); }
 
+/* ============ STAGE 4: difficulty selector, diplomacy ============ */
+
+.difficulty-row { display: flex; justify-content: center; gap: 10px; margin-bottom: 8px; }
+.difficulty-btn {
+  padding: 8px 20px;
+  border-radius: 20px;
+  border: 1.5px solid rgba(216,169,58,0.3);
+  background: rgba(255,255,255,0.03);
+  color: var(--sand-dark);
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+.difficulty-btn.active {
+  border-color: var(--gold);
+  background: rgba(216,169,58,0.18);
+  color: var(--gold-light);
+}
+
+.diplomacy-pill {
+  background: rgba(140,47,47,0.25);
+  border-color: var(--red);
+}
+.diplomacy-pill:hover { border-color: var(--gold); }
+
+.diplomacy-card {
+  background: rgba(255,255,255,0.03);
+  border: 1.5px solid rgba(216,169,58,0.25);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+.diplomacy-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.diplomacy-emblem { width: 34px; height: 34px; }
+.diplomacy-emblem svg { width: 100%; height: 100%; }
+.diplomacy-name { font-family: var(--font-display); color: var(--gold-light); font-size: 0.95rem; }
+.diplomacy-status {
+  margin-left: auto;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 3px 9px;
+  border-radius: 12px;
+  font-weight: 700;
+}
+.diplomacy-status.war { background: rgba(140,47,47,0.35); color: #F0A8A8; }
+.diplomacy-status.peace { background: rgba(46,107,79,0.3); color: #A8D8BE; }
+.diplomacy-status.alliance { background: rgba(216,169,58,0.3); color: var(--gold-light); }
+.diplomacy-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.diplomacy-actions button {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(216,169,58,0.3);
+  background: rgba(255,255,255,0.04);
+  color: var(--ivory);
+  font-size: 0.72rem;
+  font-family: var(--font-body);
+  cursor: pointer;
+}
+.diplomacy-actions button:hover { border-color: var(--gold); color: var(--gold-light); }
+
 

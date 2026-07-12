@@ -5,21 +5,23 @@ from antiquity through the medieval period — in the spirit of *Battle of
 Polytopia*, built for the web with hex tiles, hand-drawn inline-SVG art, and
 mobile-first touch controls.
 
-## Status: Stage 3 of 5 complete
+## Status: Stage 4 of 5 complete
 
 Stage 1 delivered the **world & exploration foundation**. Stage 2 added
-**cities, production, and combat**. Stage 3 adds **technology and
-progression**: a full four-branch tech tree (Core, Military, Economic,
-Naval — 18 techs total) that gates units and buildings behind research,
-8 world Wonders with permanent empire-wide bonuses, and — importantly —
-every kingdom's bonus text from the concept doc is now a real, numeric
-effect wired into combat, movement, and city economy (Kush archers really
-do hit harder at range, Ethiopia really does ignore the highland movement
-penalty, Kemet really does build Wonders cheaper next to rivers, and so on).
-AI opponents now also research technology on their own (picking randomly
-from what's available) in addition to growing/producing, though they still
-don't move, attack, found cities, or choose what to build — that's Stage 4.
-See the roadmap below for what's still ahead.
+**cities, production, and combat**. Stage 3 added **technology and
+progression**. Stage 4 makes the AI actually play the game, and adds
+**diplomacy**: opponents now settle new cities with their own villagers,
+decide what to build in every city (defense first, then economy, then
+expansion, then wonders), move and attack with their military units
+(weighing terrain, target HP, and a difficulty-scaled willingness to break
+peace), and pick their own research. Three difficulty levels (Easy/Normal/
+Hard) scale AI production and gold. On top of that, there's a real
+relationship system between every pair of kingdoms — War, Peace, and
+Alliance — with proposable Peace, Alliance, Marriage Alliance, and Trade
+Agreements, plus Tribute demands, all evaluated by the same strength-
+comparison heuristic whether the other side is AI or (from the AI's view)
+you. Attacking a kingdom you're at peace with now prompts a confirmation
+before declaring war. See the roadmap below for what's still ahead.
 
 ## How to run
 
@@ -32,10 +34,14 @@ No build step, no dependencies. It's plain ES modules.
    python3 -m http.server 8080
    ```
 2. Open `http://localhost:8080` in a browser (desktop or mobile).
-3. Pick a kingdom, then pan (drag), zoom (scroll/pinch), and click tiles/units.
+3. Pick a difficulty (Easy/Normal/Hard — this scales your AI rivals, not
+   you) and a kingdom, then pan (drag), zoom (scroll/pinch), and click
+   tiles/units.
    - Click a tile inside the gold highlight to move your selected unit there
      (movement costs biome-specific points, not just a flat tile count).
-   - Click an adjacent/in-range enemy unit while yours is selected to attack it.
+   - Click an adjacent/in-range enemy unit while yours is selected to attack
+     it. If you're currently at peace with them, you'll be asked to confirm
+     the war declaration first.
    - Select your Villager and click **Found City** in the tile panel to settle.
    - Click your own city to open its panel: watch growth, queue units/buildings/
      Wonders via **Add to Queue**, and pick a free improvement whenever it
@@ -43,9 +49,12 @@ No build step, no dependencies. It's plain ES modules.
    - Click the **Research** pill (top bar) to open the tech tree and pick
      what to research next; production and growth-choice menus grey out
      anything you haven't unlocked yet.
-   - Click "End Turn" to resolve your city economy and research, then
-     auto-pass through the AI turns (who now also research, but don't yet
-     act) back to you.
+   - Click the **Diplomacy** pill to see every rival's relationship with you
+     and propose Peace, Alliance, Marriage Alliance, Trade, Tribute, or
+     just declare War outright.
+   - Click "End Turn" to resolve your city economy and research, then watch
+     the AI take real turns — settling, building, teching, and fighting —
+     before control returns to you.
 
 ## Architecture
 
@@ -69,10 +78,13 @@ js/
   combat.js           Attack resolution (terrain + kingdom bonuses), unit death, city capture
   movement.js         Dijkstra reachable-tiles & path for per-biome movement cost
   fog.js              Per-player fog of war (unexplored / remembered / visible)
-  state.js            Players, units, cities, research, turn order, combat/production orchestration
+  difficulty.js       Easy/Normal/Hard AI production & gold multipliers
+  diplomacy.js        War/Peace/Alliance relationships, proposals, tribute, trade income
+  ai.js               AI turn logic: settling, city production priorities, unit movement/combat
+  state.js            Players, units, cities, research, diplomacy, turn/economy orchestration
   camera.js           Pan/zoom camera, screen<->world transforms
   renderer.js         Canvas 2D renderer (tiles, resources, units, cities, fog, selection)
-  main.js             App bootstrap: kingdom select, input, city/tech/production/growth UI, combat
+  main.js             App bootstrap: kingdom/difficulty select, input, all UI panels, combat
 ```
 
 All visual art (tiles, resource badges, kingdom crests, unit tokens, app icon)
@@ -104,11 +116,6 @@ frame language rather than default browser chrome.
 
 ## Roadmap (remaining stages)
 
-**Stage 4 — AI Opponents & Diplomacy**
-Turn-driven AI (multiple difficulty levels: expansion/military/economic
-heuristics), diplomacy actions (alliances, trade agreements, military pacts,
-tribute, marriage alliances, peace treaties), espionage.
-
 **Stage 5 — Victory, Persistence & Polish**
 All six victory conditions (Domination/Economic/Cultural/Religious/
 Scientific/Wonder), IndexedDB save/load, full PWA offline support (service
@@ -118,23 +125,22 @@ a fictional-kingdoms campaign mode.
 
 ## Known limitations of this build
 
-- AI players research technology and grow/produce their cities
-  automatically (auto-picking the first growth-improvement option and a
-  random available tech), but they never queue anything into production
-  themselves, move units, attack, or found new cities. Real AI
-  decision-making is Stage 4.
-- Production queues are never auto-filled for AI cities, so AI production
-  capacity currently accumulates without being spent — visually harmless,
-  but it means AI empires won't grow militarily until Stage 4 gives them
-  a production strategy too.
+- AI is heuristic, not lookahead/minimax — it makes locally sensible
+  decisions each turn (defend first, expand opportunistically, attack
+  weaker/nearby targets at a difficulty-scaled rate) rather than pursuing
+  a long-term grand strategy. It also doesn't yet coordinate multiple units
+  into a single attack, or specifically target the human over other AIs.
+- AI never proposes diplomacy to the human proactively except a small
+  chance of seeking peace when it's losing badly a war — it won't offer
+  alliances or trade unprompted. All AI-initiated proposals are evaluated
+  reactively when *you* propose to *them*.
+- No espionage yet (listed in the concept doc's Diplomacy section but not
+  implemented — spying, sabotage, and intel-gathering are a good candidate
+  for Stage 5 polish or a future update).
 - No happiness/security mechanical effects yet (tracked on `City`, and
   Yoruba/Benin's happiness-related bonuses feed the number, but nothing
   consumes it) — unrest, rebellion, etc. land in a later stage alongside
   religion/culture victory tracking.
-- Wonder effects are recomputed fresh each turn from `player.wonders`,
-  which is simple and correct but means there's no UI yet listing "your
-  empire's active bonuses" in one place — you can see them city-by-city
-  in the improvements row.
 - Unit stacking is disallowed (one unit per tile) and there's no unit
   "advance after kill" — the attacker stays put even if the defender dies.
 - `manifest.json` references only an SVG icon; add PNG 192/512 icons before

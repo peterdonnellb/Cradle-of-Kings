@@ -12,6 +12,7 @@ import {
   wonderCostMultiplier, buildingCostMultiplier, coastalGoldBonus,
   extraHappiness, freeWallsAtPop, freeHarborOnCoastalFound,
 } from './kingdomEffects.js';
+import { AI_DIFFICULTY_MULT } from './difficulty.js';
 
 let _cid = 1;
 const CITY_NAMES = {
@@ -80,6 +81,7 @@ export function computeCityYields(state, city) {
 
   let production = 3 + city.population + (city.improvements.includes('forge') ? 2 : 0) + (wonderBonus.productionFlat || 0);
   production *= riverProductionMultiplier(player, city, world);
+  if (!player.isHuman) production *= (AI_DIFFICULTY_MULT[player.difficulty] || 1);
   production = Math.round(production);
 
   let gold = (city.isCapital ? 4 : 1)
@@ -87,7 +89,7 @@ export function computeCityYields(state, city) {
     + (city.improvements.includes('harbor') ? 2 : 0)
     + (wonderBonus.goldFlat || 0)
     + coastalGoldBonus(player, city);
-  gold = Math.round(gold * cityGoldMultiplier(player));
+  gold = Math.round(gold * cityGoldMultiplier(player) * (!player.isHuman ? (AI_DIFFICULTY_MULT[player.difficulty] || 1) : 1));
 
   let culture = (city.isCapital ? 2 : 0) + (city.improvements.includes('temple') ? 2 : 0) + (wonderBonus.cultureFlat || 0);
   culture = Math.round(culture * cityCultureMultiplier(player));

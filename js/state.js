@@ -8,15 +8,23 @@ import { foundCity as foundCityImpl, queueProduction as queueProductionImpl, pro
 import { resolveAttack, canAttack, tryCaptureCity } from './combat.js';
 import { getEffectiveMove } from './kingdomEffects.js';
 import { TECHS, isTechAvailable } from './tech.js';
+import {
+  getRelationship, declareWar as declareWarImpl, canAttackAcrossDiplomacy, ensureWarForAttack,
+  evaluateProposal, breakAlliance as breakAllianceImpl, tradeIncomeForPlayer,
+} from './diplomacy.js';
+import { AI_DIFFICULTY_MULT } from './difficulty.js';
 
 let _uid = 1;
 function nextId(prefix) { return `${prefix}_${_uid++}`; }
 
+export { AI_DIFFICULTY_MULT };
+
 export class Player {
-  constructor(id, kingdomId, isHuman = false) {
+  constructor(id, kingdomId, isHuman = false, difficulty = 'normal') {
     this.id = id;
     this.kingdomId = kingdomId;
     this.isHuman = isHuman;
+    this.difficulty = difficulty;
     this.stockpile = { food: 30, wood: 20, stone: 10, gold: 15, iron: 0, copper: 0, salt: 0, ivory: 0, gems: 0, horses: 0, fish: 0, spices: 0 };
     this.unitIds = new Set();
     this.cityIds = new Set();
@@ -59,11 +67,12 @@ export class GameState {
     this.fog = new FogOfWar();
     this.playerOrder = [];
     this.builtWonders = new Set();
+    this.relationships = new Map();
   }
 
-  addPlayer(kingdomId, isHuman = false) {
+  addPlayer(kingdomId, isHuman = false, difficulty = 'normal') {
     const id = nextId('player');
-    const player = new Player(id, kingdomId, isHuman);
+    const player = new Player(id, kingdomId, isHuman, difficulty);
     this.players.set(id, player);
     this.playerOrder.push(id);
     if (!this.activePlayerId) this.activePlayerId = id;
@@ -128,7 +137,6 @@ export class GameState {
 
   setResearch(player, techId) {
     if (!isTechAvailable(player.technologies, techId) && !player.technologies.has(techId)) {
-      // allow re-selection only if truly available (prereqs met, not already known)
       if (!TECHS[techId] || !TECHS[techId].req.every(r => player.technologies.has(r))) return false;
     }
     if (player.technologies.has(techId)) return false;
@@ -136,18 +144,43 @@ export class GameState {
     return true;
   }
 
+  // --- diplomacy --------------------------------------------------------------
+
+  getRelationship(a, b) {
+    return getRelationship(this, a, b);
+  }
+
+  declareWar(a, b) {
+    return declareWarImpl(this, a, b);
+  }
+
+  proposePeace(proposer, target) { return evaluateProposal(this, proposer, target, 'peace'); }
+  proposeAlliance(proposer, target) { return evaluateProposal(this, proposer, target, 'alliance'); }
+  proposeTrade(proposer, target) { return evaluateProposal(this, proposer, target, 'trade'); }
+  proposeMarriage(proposer, target) { return evaluateProposal(this, proposer, target, 'marriage_alliance'); }
+  demandTribute(proposer, target, amount) { return evaluateProposal(this, proposer, target, 'tribute', { amount }); }
+  breakAlliance(a, b) { return breakAllianceImpl(this, a, b); }
+
   // --- combat ---------------------------------------------------------------
 
   canAttack(attacker, q, r) {
-    return canAttack(this, attacker, q, r);
+    if (!canAttack(this, attacker, q, r)) return false;
+    const defender = this.unitsAt(q, r);
+    if (!defender) return false;
+    return canAttackAcrossDiplomacy(this, attacker.owner, defender.owner);
   }
 
   attack(attacker, q, r) {
     const defender = this.unitsAt(q, r);
     if (!defender) return null;
+    if (!canAttackAcrossDiplomacy(this, attacker.owner, defender.owner)) return null;
+    const rel = this.getRelationship(attacker.owner, defender.owner);
+    const warDeclared = rel.status === 'peace';
+    ensureWarForAttack(this, attacker.owner, defender.owner);
     const result = resolveAttack(this, attacker, defender);
     if (result.defenderDied) tryCaptureCity(this, attacker, q, r);
     this.refreshFogForPlayer(attacker.owner);
+    result.warDeclared = warDeclared;
     return result;
   }
 
@@ -186,7 +219,7 @@ export class GameState {
     this.refreshAllFog();
   }
 
-  /** Ends the current player's turn: processes their cities' economy, then advances to the next player. */
+  /** Ends the current player's turn: processes their cities' economy + diplomacy income, then advances. */
   endTurn() {
     const endingPlayerId = this.activePlayerId;
     const endingPlayer = this.players.get(endingPlayerId);
@@ -196,6 +229,7 @@ export class GameState {
         const city = this.cities.get(cid);
         if (city) events.push(...processCityTurn(this, city));
       }
+      endingPlayer.stockpile.gold += tradeIncomeForPlayer(this, endingPlayerId);
       this.refreshFogForPlayer(endingPlayerId);
     }
 
