@@ -500,4 +500,50 @@ html, body {
 }
 .diplomacy-actions button:hover { border-color: var(--gold); color: var(--gold-light); }
 
+/* ============ STAGE 5: continue game, icon buttons, progress, victory ============ */
+
+.continue-btn {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto 20px;
+  padding: 12px 18px;
+  border-radius: 12px;
+  border: 2px solid var(--gold);
+  background: rgba(216,169,58,0.15);
+  color: var(--gold-light);
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+.continue-btn:hover { background: rgba(216,169,58,0.25); }
+.continue-emblem { width: 28px; height: 28px; flex-shrink: 0; }
+.continue-emblem svg { width: 100%; height: 100%; }
+
+.icon-btn {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1.5px solid rgba(216,169,58,0.3);
+  background: rgba(255,255,255,0.04);
+  color: var(--ivory);
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+  margin-right: 8px;
+}
+.icon-btn:hover { border-color: var(--gold); color: var(--gold-light); }
+.icon-btn.muted { opacity: 0.5; }
+
+.progress-pill { background: rgba(140,47,47,0.12); border-color: rgba(216,169,58,0.3); }
+
+.progress-row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
+.progress-row-label { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--sand); }
+.progress-row .mini-bar { height: 8px; }
+
+.victory-emblem-large { width: 90px; height: 90px; margin: 0 auto 14px; }
+.victory-emblem-large svg { width: 100%; height: 100%; }
+.victory-subtitle { text-align: center; color: var(--sand-dark); font-size: 0.9rem; margin-bottom: 18px; }
+
 

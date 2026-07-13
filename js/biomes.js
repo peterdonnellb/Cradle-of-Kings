@@ -1,16 +1,29 @@
-// biomes.js — Biome data + inline SVG tile art generators
-// Art direction: warm earth tones, mudcloth/kente-inspired geometric texture,
-// hand-drawn silhouettes (baobabs, dunes, papyrus, stone koppies) instead of icons/emoji.
-// Updated with higher visual fidelity and game-theoretic clarity:
-// - High move cost = visually complex/dense (rainforest, volcanic).
-// - Low move cost = open, clear sightlines (savanna, grassland).
-// - Resources signaled by integrated silhouettes (fish, elephant, camel, gems).
+// biomes.js — Biome data + inline SVG tile art generators.
+//
+// Art direction notes (visual overhaul pass):
+//  - Color psychology: each biome's palette is chosen for legibility-at-a-glance ("game
+//    theory" readability — a player scanning the map should classify terrain by color alone
+//    within a fraction of a second, so hues are kept far apart in hue AND lightness between
+//    adjacent-on-map biomes) as well as emotional tone (warm inviting golds for savanna,
+//    cool dramatic slate for highlands, high-contrast ember/char for volcanic danger,
+//    trustworthy deep blue for ocean).
+//  - African art motifs are deliberately varied per biome rather than one pattern reused
+//    everywhere: bogolanfini/mudcloth triangles (Mali) for the arid west, Kuba-cloth-style
+//    lattice (Kuba Kingdom, Congo Basin) for rainforest floor, Ndebele-inspired chevron
+//    bands (South Africa) for highland terraces, and small Adinkra-style stamps (Akan,
+//    Ghana) scattered sparingly across grassland as "ancient waymarker" texture.
+//  - Three hand-authored variants per biome (+ a deterministic horizontal flip applied by
+//    the renderer) break up the repetition that a single stamped tile image creates across
+//    a 1000+ tile map, without paying the performance cost of truly regenerating unique
+//    art per tile every frame.
 
 const PAL = {
   clay: '#B5502D',
   clayDark: '#8C3A1F',
+  clayLight: '#D97B4F',
   gold: '#D8A93A',
   goldLight: '#F1CE73',
+  goldDeep: '#B8862A',
   indigo: '#223A5E',
   indigoDeep: '#152941',
   bark: '#4A3427',
@@ -19,22 +32,21 @@ const PAL = {
   sandDark: '#D8C594',
   kente: '#2E6B4F',
   kenteDark: '#1F4B37',
+  kenteLight: '#3F8563',
   red: '#8C2F2F',
+  ember: '#E0642C',
   water: '#2C7E8C',
-  waterDeep: '#1B5661',
-  waterShallow: '#4FA6AE',
+  waterDeep: '#123B47',
+  waterShallow: '#5FBEC4',
+  waterFoam: '#EAF6F2',
   stone: '#8D8474',
-  stoneDark: '#655E51',
+  stoneDark: '#5B5348',
+  stoneLight: '#ADA48E',
   ivory: '#F6EFDD',
-  lava: '#C6491F',
-  // New additions for enhanced realism
-  mud: '#7B6A50',
-  canopy: '#2A5A3A',
-  peak: '#4A4545',
-  highlandGreen: '#7A905A',
-  lavaGlow: '#F25C2B',
-  cropGreen: '#6A9B4A',
-  riverBlue: '#3A9BBF',
+  lava: '#E24A1F',
+  lavaCore: '#FFB347',
+  fertile: '#4E8F4A',
+  fertileLight: '#7CB86B',
 };
 
 // Flat-top hex polygon points for a 100x100 viewBox, centered at 50,50, radius r
@@ -46,50 +58,94 @@ function hexPoints(r = 46) {
   }
   return pts.join(' ');
 }
-const HEX_CLIP = hexPoints(50); // slightly oversized so fill bleeds to hex edge before stroke
+const HEX_CLIP = hexPoints(50);
 
-function wrap(id, defs, body, strokeColor = 'rgba(20,14,8,0.35)') {
+let _uidCounter = 0;
+function uid() { return `u${(_uidCounter++).toString(36)}`; }
+
+function wrap(defs, body, strokeColor = 'rgba(20,14,8,0.32)') {
+  const clipId = uid();
   return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
     <defs>
-      <clipPath id="clip-${id}"><polygon points="${HEX_CLIP}"/></clipPath>
+      <clipPath id="clip-${clipId}"><polygon points="${HEX_CLIP}"/></clipPath>
       ${defs}
     </defs>
-    <g clip-path="url(#clip-${id})">${body}</g>
+    <g clip-path="url(#clip-${clipId})">${body}</g>
     <polygon points="${hexPoints(49)}" fill="none" stroke="${strokeColor}" stroke-width="1.4"/>
   </svg>`;
 }
 
-// --- shared decorative motifs & silhouettes ------------------------------------
+// --- African-art-inspired texture motifs ---------------------------------------
 
-function mudclothTriangles(id, color, opacity = 0.14) {
-  return `<pattern id="mc-${id}" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(0)">
-    <polygon points="0,14 7,0 14,14" fill="${color}" opacity="${opacity}"/>
-  </pattern>`;
+/** Bogolanfini / mudcloth-style triangle rows (Mali) — bold, geometric, earth-toned. */
+function mudclothTriangles(color, opacity = 0.12, size = 14, rotate = 0) {
+  const id = uid();
+  return {
+    id,
+    defs: `<pattern id="pat-${id}" width="${size}" height="${size}" patternUnits="userSpaceOnUse" patternTransform="rotate(${rotate})">
+      <polygon points="0,${size} ${size / 2},0 ${size},${size}" fill="${color}" opacity="${opacity}"/>
+    </pattern>`,
+  };
 }
 
-function kenteStripes(id, colorA, colorB, opacity = 0.18) {
-  return `<pattern id="ks-${id}" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-    <rect width="10" height="5" fill="${colorA}" opacity="${opacity}"/>
-    <rect y="5" width="10" height="5" fill="${colorB}" opacity="${opacity}"/>
-  </pattern>`;
+/** Kuba-cloth-style diamond lattice (Kuba Kingdom, Congo Basin) — dense woven-raffia look for rainforest floor. */
+function kubaLattice(colorA, colorB, opacity = 0.16) {
+  const id = uid();
+  return {
+    id,
+    defs: `<pattern id="pat-${id}" width="16" height="16" patternUnits="userSpaceOnUse" patternTransform="rotate(20)">
+      <rect width="16" height="16" fill="none"/>
+      <path d="M0,8 L8,0 L16,8 L8,16 Z" fill="none" stroke="${colorA}" stroke-width="1.4" opacity="${opacity}"/>
+      <circle cx="8" cy="8" r="1.6" fill="${colorB}" opacity="${opacity + 0.06}"/>
+    </pattern>`,
+  };
 }
 
-// Silhouettes: Hand-drawn, realistic, game-theoretically informative
+/** Small Adinkra-style waymarker stamp — simplified concentric spiral, scattered sparingly. */
+function adinkraStamp(cx, cy, scale = 1, color = 'rgba(74,52,39,0.28)') {
+  return `<g transform="translate(${cx},${cy}) scale(${scale})" fill="none" stroke="${color}" stroke-width="1.3">
+    <circle cx="0" cy="0" r="5"/>
+    <circle cx="0" cy="0" r="2.4"/>
+    <path d="M -5 0 A 5 5 0 0 1 0 -5 M 5 0 A 5 5 0 0 1 0 5" stroke-width="1"/>
+  </g>`;
+}
 
-function baobabSilhouette(cx, cy, scale, color = PAL.bark) {
+/** San-rock-art-style ochre dot cluster — evokes ancient rock paintings on stone/desert. */
+function rockArtDots(cx, cy, scale = 1, color = '#8C3A1F') {
+  const pts = [[0, 0], [3, -2], [-3, -1], [2, 3], [-2, 3], [5, 1], [-5, -2]];
+  return `<g transform="translate(${cx},${cy}) scale(${scale})" fill="${color}" opacity="0.55">
+    ${pts.map(([x, y]) => `<circle cx="${x * 2}" cy="${y * 2}" r="1.1"/>`).join('')}
+  </g>`;
+}
+
+// --- flora & landmark silhouettes -----------------------------------------------
+
+function baobabSilhouette(cx, cy, scale, color = PAL.bark, twin = false) {
+  const canopy = twin
+    ? `<ellipse cx="0" cy="-15" rx="13" ry="9"/><ellipse cx="-10" cy="-19" rx="7" ry="6"/><ellipse cx="10" cy="-18" rx="7.5" ry="6.5"/><ellipse cx="0" cy="-24" rx="6" ry="5"/>`
+    : `<ellipse cx="0" cy="-16" rx="12" ry="9"/><ellipse cx="-9" cy="-20" rx="6" ry="5"/><ellipse cx="9" cy="-19" rx="6.5" ry="5.5"/>`;
   return `<g transform="translate(${cx},${cy}) scale(${scale})" fill="${color}">
-    <ellipse cx="0" cy="-16" rx="12" ry="9"/>
-    <ellipse cx="-9" cy="-20" rx="6" ry="5"/>
-    <ellipse cx="9" cy="-19" rx="6.5" ry="5.5"/>
-    <rect x="-3.2" y="-14" width="6.4" height="16" rx="2"/>
-    <path d="M -3 2 Q -8 6 -10 10 M 3 2 Q 8 6 10 10 M 0 2 L 0 9" stroke="${color}" stroke-width="1.6" fill="none"/>
+    ${canopy}
+    <rect x="-3.4" y="-14" width="6.8" height="17" rx="2.4"/>
+    <path d="M -3 3 Q -9 7 -11 12 M 3 3 Q 9 7 11 12 M 0 3 L 0 10" stroke="${color}" stroke-width="1.6" fill="none"/>
   </g>`;
 }
 
 function acaciaSilhouette(cx, cy, scale, color = '#3B5230') {
   return `<g transform="translate(${cx},${cy}) scale(${scale})">
-    <rect x="-1.4" y="-2" width="2.8" height="10" fill="${PAL.bark}"/>
-    <path d="M -14 -2 Q 0 -14 14 -2 Q 0 -6 -14 -2 Z" fill="${color}"/>
+    <rect x="-1.5" y="-2" width="3" height="11" fill="${PAL.bark}"/>
+    <path d="M -15 -3 Q 0 -15 15 -3 Q 0 -8 -15 -3 Z" fill="${color}"/>
+    <path d="M -10 -5 Q 0 -12 10 -5" fill="none" stroke="${color}" stroke-width="0.6" opacity="0.5"/>
+  </g>`;
+}
+
+/** Candelabra euphorbia — an iconic African highland/savanna silhouette distinct from acacia. */
+function euphorbiaSilhouette(cx, cy, scale, color = '#3E6B4A') {
+  return `<g transform="translate(${cx},${cy}) scale(${scale})" fill="${color}">
+    <rect x="-1.3" y="-2" width="2.6" height="12" rx="1"/>
+    <rect x="-1.1" y="-10" width="2.2" height="9" rx="1"/>
+    <rect x="-5" y="-7" width="2" height="8" rx="1" transform="rotate(-18 -5 -7)"/>
+    <rect x="3" y="-7" width="2" height="8" rx="1" transform="rotate(18 3 -7)"/>
   </g>`;
 }
 
@@ -106,220 +162,236 @@ function palmSilhouette(cx, cy, scale, color = '#3E7A4A') {
   </g>`;
 }
 
-function elephantSilhouette(cx, cy, scale) {
-  return `<g transform="translate(${cx},${cy}) scale(${scale})" fill="${PAL.bark}" opacity="0.9">
-    <path d="M-14,10 C-16,4 -12,-2 -6,-4 C-2,-8 4,-8 8,-4 C12,-2 16,2 16,8 C18,8 18,12 16,12 L12,12 L12,8 L-14,8 L-14,12 L-16,12 C-18,12 -16,10 -14,10 Z M-8,0 L-4,0 C-2,-3 2,-3 4,0 L8,0 M-6,12 L-6,18 L-4,18 L-4,12 M4,12 L4,18 L6,18 L6,12" stroke="${PAL.bark}" stroke-width="1.5" fill="none"/>
-    <ellipse cx="-4" cy="-4" rx="3" ry="2"/>
+/** Papyrus reed cluster for riverbanks and the Nile Valley. */
+function papyrusCluster(cx, cy, scale, color = '#4F8B4A') {
+  return `<g transform="translate(${cx},${cy}) scale(${scale})" stroke="${color}" fill="${color}" stroke-width="1">
+    <path d="M0,10 L0,-10 M-3,10 L-3,-7 M3,10 L3,-7" fill="none"/>
+    <circle cx="0" cy="-11" r="2.4"/><circle cx="-3" cy="-8" r="1.8"/><circle cx="3" cy="-8" r="1.8"/>
   </g>`;
 }
 
-function camelCaravan(cx, cy, scale) {
-  return `<g transform="translate(${cx},${cy}) scale(${scale})" fill="${PAL.bark}" opacity="0.8">
-    <path d="M-10,4 C-12,0 -10,-4 -6,-6 C-2,-8 4,-8 6,-6 C8,-4 8,0 6,4 C4,6 0,6 -2,4 L-2,8 L-6,8 L-6,4 Z M-4,-6 L-4,-10 L-2,-10 L-2,-6 M4,-6 L4,-10 L6,-10 L6,-6" stroke="${PAL.bark}" stroke-width="1.5" fill="none"/>
-    <circle cx="-2" cy="-8" r="2"/>
-    <circle cx="4" cy="-8" r="2"/>
-    <path d="M-8,4 L-12,4 L-12,6 L-8,6 M6,4 L10,4 L10,6 L6,6" stroke="${PAL.bark}" stroke-width="1.5" fill="none"/>
-    <rect x="-4" y="-12" width="2" height="4" fill="${PAL.clay}"/>
+/** Termite mound — small savanna landmark detail, warm ochre spire. */
+function termiteMound(cx, cy, scale) {
+  return `<g transform="translate(${cx},${cy}) scale(${scale})">
+    <path d="M -4 8 Q -6 -4 0 -12 Q 6 -4 4 8 Z" fill="${PAL.clayDark}"/>
+    <path d="M -4 8 Q -6 -4 0 -12" stroke="${PAL.bark}" stroke-width="0.6" fill="none" opacity="0.5"/>
   </g>`;
 }
 
-function hutSilhouette(cx, cy, scale) {
-  return `<g transform="translate(${cx},${cy}) scale(${scale})" fill="${PAL.sandDark}" opacity="0.9">
-    <path d="M-8,6 L-10,0 L0,-8 L10,0 L8,6 Z" fill="${PAL.clayDark}"/>
-    <rect x="-6" y="6" width="12" height="4" fill="${PAL.barkLight}"/>
-    <rect x="-6" y="6" width="4" height="4" fill="${PAL.bark}"/>
+function duneCurves(color1 = PAL.goldDeep, color2 = PAL.gold, shift = 0) {
+  return `<path d="M ${-10 + shift} 52 Q ${25 + shift} 36 ${60 + shift} 52 T ${130 + shift} 46 L 130 110 L -10 110 Z" fill="${color1}" opacity="0.55"/>
+          <path d="M ${-10 - shift} 68 Q ${30 - shift} 55 ${60 - shift} 68 T ${130 - shift} 63 L 130 110 L -10 110 Z" fill="${color2}" opacity="0.4"/>
+          <path d="M -10 82 Q 40 74 70 84 T 130 80 L 130 110 L -10 110 Z" fill="${color1}" opacity="0.25"/>`;
+}
+
+function waterRipples(cx, cy, w = 24, color = 'rgba(255,255,255,0.4)') {
+  return `<g stroke="${color}" stroke-width="1.4" fill="none">
+    <path d="M ${cx - w} ${cy} Q ${cx - w / 2} ${cy - 4} ${cx} ${cy} T ${cx + w} ${cy}"/>
+    <path d="M ${cx - w + 4} ${cy + 8} Q ${cx - w / 2 + 4} ${cy + 4} ${cx + 4} ${cy + 8} T ${cx + w + 4} ${cy + 6}"/>
   </g>`;
 }
 
-function crocodileSilhouette(cx, cy, scale) {
-  return `<g transform="translate(${cx},${cy}) scale(${scale})" fill="${PAL.kenteDark}" opacity="0.8">
-    <path d="M-12,4 C-10,0 -4,-2 0,0 C4,2 10,4 14,2 C16,2 16,4 14,6 C10,6 6,8 0,8 C-4,8 -10,6 -14,6 Z M-12,4 L-14,2 M14,2 L16,0" stroke="${PAL.kenteDark}" stroke-width="1" fill="none"/>
-    <circle cx="-8" cy="2" r="1" fill="${PAL.sand}"/>
+function mountainRange(baseColor, midColor, snow = false, shift = 0) {
+  return `<g>
+    <polygon points="${-8 + shift},82 ${20 + shift},28 ${42 + shift},54 ${64 + shift},18 ${108 + shift},82" fill="${baseColor}"/>
+    <polygon points="${6 + shift},82 ${28 + shift},44 ${42 + shift},56 ${58 + shift},82" fill="${midColor}" opacity="0.75"/>
+    ${snow ? `<polygon points="${16 + shift},40 ${20 + shift},28 ${25 + shift},39" fill="#fff" opacity="0.85"/><polygon points="${58 + shift},24 ${64 + shift},18 ${70 + shift},30" fill="#fff" opacity="0.85"/>` : ''}
   </g>`;
 }
 
-function kopjeSilhouette(cx, cy, scale) {
-  return `<g transform="translate(${cx},${cy}) scale(${scale})" fill="${PAL.stoneDark}" opacity="0.9">
-    <path d="M-10,8 C-8,0 -4,-6 0,-10 C4,-6 8,0 10,8 Z"/>
-    <path d="M-6,4 C-4,-2 0,-4 4,-2" stroke="${PAL.stone}" stroke-width="1.5" fill="none"/>
+// --- biome SVG generators (3 hand-authored variants each) ------------------------
+
+function svgOceanA() {
+  const id = uid();
+  const defs = `<radialGradient id="g-${id}" cx="45%" cy="30%" r="80%">
+    <stop offset="0%" stop-color="${PAL.waterShallow}"/><stop offset="55%" stop-color="${PAL.water}"/><stop offset="100%" stop-color="${PAL.waterDeep}"/>
+  </radialGradient>`;
+  return wrap(defs, `<rect x="-10" y="-10" width="120" height="120" fill="url(#g-${id})"/>${waterRipples(32, 36, 22)}${waterRipples(66, 62, 26)}${waterRipples(48, 82, 18)}`);
+}
+function svgOceanB() {
+  const id = uid();
+  const defs = `<radialGradient id="g-${id}" cx="60%" cy="45%" r="75%">
+    <stop offset="0%" stop-color="${PAL.waterShallow}"/><stop offset="60%" stop-color="${PAL.water}"/><stop offset="100%" stop-color="${PAL.waterDeep}"/>
+  </radialGradient>`;
+  return wrap(defs, `<rect x="-10" y="-10" width="120" height="120" fill="url(#g-${id})"/>${waterRipples(40, 28, 24)}${waterRipples(58, 58, 20)}${waterRipples(30, 78, 22)}`);
+}
+function svgOceanC() {
+  const id = uid();
+  const defs = `<radialGradient id="g-${id}" cx="35%" cy="60%" r="80%">
+    <stop offset="0%" stop-color="${PAL.waterShallow}"/><stop offset="55%" stop-color="${PAL.water}"/><stop offset="100%" stop-color="${PAL.waterDeep}"/>
+  </radialGradient>`;
+  return wrap(defs, `<rect x="-10" y="-10" width="120" height="120" fill="url(#g-${id})"/>${waterRipples(50, 24, 20)}${waterRipples(24, 54, 22)}${waterRipples(70, 74, 24)}`);
+}
+
+function svgCoastVariant(sandShift) {
+  const id = uid();
+  const shoreY = 78 + sandShift; // where the sand begins — most of the tile stays water
+  const defs = `<linearGradient id="g-${id}" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="${PAL.waterShallow}"/><stop offset="70%" stop-color="#7FD4C9"/><stop offset="100%" stop-color="#BFE8DA"/>
+  </linearGradient>`;
+  return wrap(defs, `<rect x="-10" y="-10" width="120" height="120" fill="url(#g-${id})"/>
+    ${waterRipples(38, 24, 22)}${waterRipples(64, 46, 20)}
+    <path d="M -10,${shoreY} Q 30,${shoreY - 10} 60,${shoreY} T 130,${shoreY - 6} L 130,110 L -10,110 Z" fill="${PAL.sand}"/>
+    <path d="M -10,${shoreY} Q 30,${shoreY - 10} 60,${shoreY} T 130,${shoreY - 6}" fill="none" stroke="${PAL.waterFoam}" stroke-width="2.4" opacity="0.75"/>`);
+}
+
+function svgSaharaVariant(duneShift, palmOasis) {
+  const id = uid();
+  const mc = mudclothTriangles(PAL.clayDark, 0.09, 16, 8);
+  const defs = `<linearGradient id="g-${id}" x1="0" y1="0" x2="0.3" y2="1">
+    <stop offset="0%" stop-color="${PAL.goldLight}"/><stop offset="100%" stop-color="${PAL.gold}"/>
+  </linearGradient>${mc.defs}`;
+  return wrap(defs, `<rect x="-10" y="-10" width="120" height="120" fill="url(#g-${id})"/><rect x="-10" y="-10" width="120" height="120" fill="url(#pat-${mc.id})"/>
+    ${duneCurves(PAL.goldDeep, PAL.gold, duneShift)}
+    ${rockArtDots(76, 30, 0.9)}`);
+}
+
+function svgSahelVariant(treeSeed) {
+  const id = uid();
+  const mc = mudclothTriangles(PAL.bark, 0.08, 13, -6);
+  const defs = `<linearGradient id="g-${id}" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#D9B968"/><stop offset="100%" stop-color="#C29A4C"/>
+  </linearGradient>${mc.defs}`;
+  const trees = treeSeed === 0
+    ? `${acaciaSilhouette(28, 62, 1)}${acaciaSilhouette(70, 42, 0.75)}${termiteMound(52, 74, 0.8)}`
+    : treeSeed === 1
+    ? `${acaciaSilhouette(62, 50, 1.05)}${acaciaSilhouette(22, 34, 0.7)}${termiteMound(80, 66, 0.7)}`
+    : `${acaciaSilhouette(45, 60, 0.95)}${acaciaSilhouette(78, 36, 0.65)}${adinkraStamp(20, 40, 0.9)}`;
+  return wrap(defs, `<rect x="-10" y="-10" width="120" height="120" fill="url(#g-${id})"/><rect x="-10" y="-10" width="120" height="120" fill="url(#pat-${mc.id})"/>${trees}`);
+}
+
+function svgSavannaVariant(seed) {
+  const id = uid();
+  const mc = mudclothTriangles(PAL.kenteDark, 0.06, 15, 4);
+  const defs = `<radialGradient id="g-${id}" cx="50%" cy="30%" r="90%">
+    <stop offset="0%" stop-color="#DFC067"/><stop offset="100%" stop-color="#C7A24E"/>
+  </radialGradient>${mc.defs}`;
+  const scene = seed === 0
+    ? `${acaciaSilhouette(36, 50, 1.2)}${baobabSilhouette(72, 64, 0.85)}${termiteMound(58, 78, 0.9)}`
+    : seed === 1
+    ? `${baobabSilhouette(30, 58, 0.95)}${acaciaSilhouette(68, 40, 1)}${adinkraStamp(50, 76, 1)}`
+    : `${acaciaSilhouette(50, 34, 0.85)}${acaciaSilhouette(74, 60, 0.95)}${baobabSilhouette(20, 72, 0.7, PAL.bark, true)}`;
+  return wrap(defs, `<rect x="-10" y="-10" width="120" height="120" fill="url(#g-${id})"/><rect x="-10" y="-10" width="120" height="120" fill="url(#pat-${mc.id})"/>${scene}`);
+}
+
+function svgRainforestVariant(seed) {
+  const id = uid();
+  const kb = kubaLattice(PAL.kenteLight, PAL.goldLight, 0.14);
+  const defs = `<radialGradient id="g-${id}" cx="50%" cy="20%" r="100%">
+    <stop offset="0%" stop-color="#2A6B45"/><stop offset="100%" stop-color="#173D28"/>
+  </radialGradient>${kb.defs}`;
+  const canopy = seed === 0
+    ? `<circle cx="28" cy="40" r="16" fill="#2E7A4C"/><circle cx="56" cy="54" r="19" fill="#245F3C"/><circle cx="74" cy="32" r="13" fill="#338352"/>`
+    : seed === 1
+    ? `<circle cx="40" cy="30" r="18" fill="#2E7A4C"/><circle cx="66" cy="58" r="16" fill="#245F3C"/><circle cx="20" cy="62" r="14" fill="#338352"/>`
+    : `<circle cx="50" cy="50" r="20" fill="#245F3C"/><circle cx="24" cy="30" r="13" fill="#2E7A4C"/><circle cx="78" cy="64" r="12" fill="#338352"/>`;
+  return wrap(defs, `<rect x="-10" y="-10" width="120" height="120" fill="url(#g-${id})"/><rect x="-10" y="-10" width="120" height="120" fill="url(#pat-${kb.id})"/>
+    ${canopy}<circle cx="50" cy="46" r="34" fill="none" stroke="#0F2E1C" stroke-width="1" opacity="0.3"/>`);
+}
+
+function svgRiftHighlandsVariant(seed) {
+  const id = uid();
+  const defs = `<linearGradient id="g-${id}" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#B7C79A"/><stop offset="55%" stop-color="#8A9C72"/><stop offset="100%" stop-color="#6C7C58"/>
+  </linearGradient>`;
+  const shift = seed === 0 ? 0 : seed === 1 ? -8 : 10;
+  const terraces = `<g opacity="0.9">
+    <path d="M -10,84 L 40,84 L 34,90 L -10,90 Z" fill="#8C2F2F"/>
+    <path d="M 40,84 L 90,84 L 84,90 L 34,90 Z" fill="${PAL.gold}"/>
+    <path d="M -10,90 L 34,90 L 28,96 L -10,96 Z" fill="${PAL.indigo}"/>
+    <path d="M 34,90 L 84,90 L 78,96 L 28,96 Z" fill="#8C2F2F"/>
   </g>`;
+  return wrap(defs, `<rect x="-10" y="-10" width="120" height="120" fill="url(#g-${id})"/>${mountainRange('#5F6E4B', '#7C8C63', false, shift)}
+    ${seed === 2 ? terraces : euphorbiaSilhouette(78, 70, 1)}${seed === 0 ? euphorbiaSilhouette(18, 74, 0.7) : ''}`);
 }
 
-function cropsSilhouette(cx, cy, scale) {
-  return `<g transform="translate(${cx},${cy}) scale(${scale})" fill="${PAL.cropGreen}" opacity="0.9">
-    <path d="M-4,6 L-4,-4 M0,6 L0,-6 M4,6 L4,-4"/>
-    <path d="M-4,-4 Q-6,-6 -8,-4 M0,-6 Q-2,-8 -4,-6 M4,-4 Q2,-6 0,-4" stroke="${PAL.cropGreen}" stroke-width="1.5" fill="none"/>
-    <rect x="-8" y="4" width="16" height="4" fill="${PAL.clayDark}" opacity="0.5"/>
-  </g>`;
+function svgVolcanicVariant(seed) {
+  const id = uid();
+  const defs = `<radialGradient id="g-${id}" cx="50%" cy="72%" r="55%">
+    <stop offset="0%" stop-color="${PAL.lavaCore}"/><stop offset="45%" stop-color="${PAL.lava}"/><stop offset="100%" stop-color="${PAL.stoneDark}"/>
+  </radialGradient>`;
+  const shift = seed === 0 ? 0 : seed === 1 ? 8 : -8;
+  return wrap(defs, `<rect x="-10" y="-10" width="120" height="120" fill="#332C28"/>${mountainRange('#3B342F', '#4A423B', false, shift)}
+    <polygon points="${45 + shift},55 ${60 + shift},18 ${75 + shift},55" fill="url(#g-${id})"/>
+    <circle cx="${60 + shift}" cy="22" r="4" fill="${PAL.lavaCore}"/>
+    <path d="M${58 + shift},50 Q${60 + shift},60 ${56 + shift},70" stroke="${PAL.ember}" stroke-width="2" fill="none" opacity="0.8"/>`);
 }
 
-function canoeSilhouette(cx, cy, scale) {
-  return `<g transform="translate(${cx},${cy}) scale(${scale})" fill="${PAL.bark}" opacity="0.8">
-    <path d="M-12,4 C-10,6 10,6 12,4 C10,2 -10,2 -12,4 Z"/>
-    <path d="M-4,4 L-4,8 L4,8 L4,4" stroke="${PAL.bark}" stroke-width="1" fill="none"/>
-  </g>`;
+function svgBaobabForestVariant(seed) {
+  const id = uid();
+  const mc = mudclothTriangles(PAL.bark, 0.07, 14, 12);
+  const defs = `<linearGradient id="g-${id}" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#D2B168"/><stop offset="100%" stop-color="#BC9752"/>
+  </linearGradient>${mc.defs}`;
+  const trees = seed === 0
+    ? `${baobabSilhouette(35, 58, 1.05)}${baobabSilhouette(68, 38, 0.7, PAL.bark, true)}${baobabSilhouette(80, 70, 0.55)}`
+    : seed === 1
+    ? `${baobabSilhouette(50, 50, 1.2, PAL.bark, true)}${baobabSilhouette(20, 30, 0.6)}`
+    : `${baobabSilhouette(26, 66, 0.9)}${baobabSilhouette(60, 30, 0.85)}${baobabSilhouette(82, 60, 0.65, PAL.bark, true)}`;
+  return wrap(defs, `<rect x="-10" y="-10" width="120" height="120" fill="url(#g-${id})"/><rect x="-10" y="-10" width="120" height="120" fill="url(#pat-${mc.id})"/>${trees}`);
 }
 
-function fishSchool(cx, cy, scale) {
-  return `<g transform="translate(${cx},${cy}) scale(${scale})" fill="${PAL.waterShallow}" opacity="0.6">
-    <path d="M-10,0 L-6,-4 L-6,4 Z M-6,-2 L-2,-6 L-2,6 L-6,2 Z M-2,-4 L2,-8 L2,8 L-2,4 Z"/>
-  </g>`;
+function svgMangroveVariant(seed) {
+  const id = uid();
+  const defs = `<linearGradient id="g-${id}" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="${PAL.waterShallow}"/><stop offset="45%" stop-color="#345C40"/><stop offset="100%" stop-color="#22432D"/>
+  </linearGradient>`;
+  const rootColor = '#2E2015';
+  const roots = seed === 0
+    ? `<g stroke="${rootColor}" stroke-width="2.6" fill="none"><path d="M25,70 L25,92 M19,72 L19,90 M31,72 L31,91"/><path d="M65,64 L65,90 M59,66 L59,88 M71,66 L71,89"/></g>
+       <ellipse cx="25" cy="66" rx="11" ry="7" fill="#5A9268"/><ellipse cx="65" cy="60" rx="12" ry="7" fill="#5A9268"/>`
+    : seed === 1
+    ? `<g stroke="${rootColor}" stroke-width="2.6" fill="none"><path d="M40,58 L40,90 M33,61 L33,87 M47,61 L47,88"/></g><ellipse cx="40" cy="54" rx="15" ry="8" fill="#5A9268"/>`
+    : `<g stroke="${rootColor}" stroke-width="2.6" fill="none"><path d="M22,64 L22,90 M55,70 L55,92 M78,58 L78,86"/></g>
+       <ellipse cx="22" cy="60" rx="10" ry="6" fill="#5A9268"/><ellipse cx="55" cy="66" rx="10" ry="6" fill="#5A9268"/><ellipse cx="78" cy="54" rx="10" ry="6" fill="#5A9268"/>`;
+  return wrap(defs, `<rect x="-10" y="-10" width="120" height="58" fill="${PAL.waterShallow}"/><rect x="-10" y="48" width="120" height="62" fill="url(#g-${id})"/>
+    ${waterRipples(50, 28, 20)}${roots}`);
 }
 
-function duneCurves(color1 = PAL.sandDark, color2 = PAL.gold) {
-  return `<path d="M -10 55 Q 25 40 60 55 T 130 50 L 130 110 L -10 110 Z" fill="${color1}" opacity="0.55"/>
-          <path d="M -10 70 Q 30 58 60 70 T 130 66 L 130 110 L -10 110 Z" fill="${color2}" opacity="0.35"/>`;
+// Nile Valley / river-carrying tiles: lush fertile fields. The water itself is drawn
+// dynamically by the renderer (it needs per-tile neighbor connectivity to flow correctly
+// across edges), so this art is "fertile farmland" that the river ribbon then overlays.
+function svgNileValleyVariant(seed) {
+  const id = uid();
+  const mc = mudclothTriangles(PAL.kenteDark, 0.07, 13, 0);
+  const defs = `<linearGradient id="g-${id}" x1="0" y1="0" x2="0.2" y2="1">
+    <stop offset="0%" stop-color="#D6E28A"/><stop offset="60%" stop-color="#B8D26A"/><stop offset="100%" stop-color="#93B850"/>
+  </linearGradient>${mc.defs}`;
+  const crops = seed === 0
+    ? `<g fill="#4F8B4A"><path d="M62,78 L62,55 M62,55 Q56,60 54,55 M62,55 Q68,60 70,55 M62,63 Q56,67 54,63 M62,63 Q68,67 70,63"/></g>${papyrusCluster(22, 30, 0.9)}`
+    : seed === 1
+    ? `<g fill="#4F8B4A"><path d="M30,80 L30,58 M30,58 Q24,63 22,58 M30,58 Q36,63 38,58"/></g>${papyrusCluster(78, 26, 1)}${papyrusCluster(70, 40, 0.6)}`
+    : `${papyrusCluster(50, 22, 1)}<g fill="#4F8B4A"><path d="M20,70 L20,50 M20,50 Q14,55 12,50 M20,50 Q26,55 28,50"/></g>`;
+  return wrap(defs, `<rect x="-10" y="-10" width="120" height="120" fill="url(#g-${id})"/><rect x="-10" y="-10" width="120" height="120" fill="url(#pat-${mc.id})"/>${crops}`);
 }
 
-function waterRipples(cx = 50, cy = 55) {
-  return `<g stroke="rgba(255,255,255,0.35)" stroke-width="1.5" fill="none">
-    <path d="M ${cx - 22} ${cy} Q ${cx - 11} ${cy - 5} ${cx} ${cy} T ${cx + 22} ${cy}"/>
-    <path d="M ${cx - 18} ${cy + 10} Q ${cx - 8} ${cy + 5} ${cx + 2} ${cy + 10} T ${cx + 24} ${cy + 8}"/>
-  </g>`;
+function svgOasisVariant(seed) {
+  const id = uid();
+  const mc = mudclothTriangles(PAL.clayDark, 0.08, 15, 8);
+  const defs = `<linearGradient id="g-${id}" x1="0" y1="0" x2="0.3" y2="1">
+    <stop offset="0%" stop-color="${PAL.goldLight}"/><stop offset="100%" stop-color="${PAL.gold}"/>
+  </linearGradient>${mc.defs}`;
+  const layout = seed === 0
+    ? `${duneCurves(PAL.goldDeep, PAL.gold, 4)}<ellipse cx="50" cy="72" rx="22" ry="10" fill="${PAL.waterShallow}"/>${palmSilhouette(36, 66, 0.9)}${palmSilhouette(62, 60, 0.75)}`
+    : seed === 1
+    ? `${duneCurves(PAL.goldDeep, PAL.gold, -6)}<ellipse cx="46" cy="60" rx="18" ry="9" fill="${PAL.waterShallow}"/>${palmSilhouette(46, 54, 1)}${palmSilhouette(66, 68, 0.7)}${palmSilhouette(26, 66, 0.6)}`
+    : `${duneCurves(PAL.goldDeep, PAL.gold, 2)}<ellipse cx="58" cy="66" rx="20" ry="9" fill="${PAL.waterShallow}"/>${palmSilhouette(58, 58, 0.85)}${palmSilhouette(38, 72, 0.65)}`;
+  return wrap(defs, `<rect x="-10" y="-10" width="120" height="120" fill="url(#g-${id})"/><rect x="-10" y="-10" width="120" height="120" fill="url(#pat-${mc.id})"/>${layout}`);
 }
 
-function mountainRange(color = PAL.stoneDark, snow = false) {
-  let peaks = `<polygon points="-5,80 25,30 45,55 65,20 105,80" fill="${color}"/>
-              <polygon points="10,80 30,45 45,58 60,80" fill="${PAL.stone}" opacity="0.7"/>`;
-  if (snow) {
-    peaks += `<polygon points="20,38 25,30 30,38" fill="#fff" opacity="0.85"/>
-              <polygon points="55,28 65,20 72,32" fill="#fff" opacity="0.85"/>`;
-  }
-  return `<g>${peaks}</g>`;
-}
-
-// --- biome SVG generators ------------------------------------------------------
-// Enhanced with game-theoretic visual clarity: 
-// High density = high move cost, open plains = low move cost.
-// Resources visually hinted via silhouettes.
-
-const svgGenerators = {
-  ocean(id) {
-    const defs = `<radialGradient id="g-${id}" cx="40%" cy="30%" r="80%">
-      <stop offset="0%" stop-color="${PAL.waterShallow}"/>
-      <stop offset="60%" stop-color="${PAL.water}"/>
-      <stop offset="100%" stop-color="${PAL.waterDeep}"/>
-    </radialGradient>`;
-    return wrap(id, defs, `<rect x="-10" y="-10" width="120" height="120" fill="url(#g-${id})"/>
-      ${waterRipples(25,30)}${waterRipples(50,55)}${waterRipples(75,80)}
-      ${fishSchool(30, 40, 0.8)}${canoeSilhouette(70, 75, 0.7)}`);
-  },
-
-  coast(id) {
-    return wrap(id, '', `<rect x="-10" y="-10" width="120" height="65" fill="${PAL.waterShallow}"/>
-      <rect x="-10" y="55" width="120" height="55" fill="${PAL.sand}"/>
-      ${waterRipples(50,30)}
-      <path d="M-10,55 Q 20,45 50,55 T 110,55" stroke="${PAL.sandDark}" stroke-width="2" fill="none"/>
-      ${palmSilhouette(75, 75, 0.9)}`);
-  },
-
-  sahara_desert(id) {
-    const defs = `<linearGradient id="dune-${id}" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stop-color="${PAL.goldLight}"/>
-        <stop offset="100%" stop-color="${PAL.clay}"/>
-      </linearGradient>` + mudclothTriangles(id, PAL.clayDark, 0.15);
-    return wrap(id, defs, `<rect x="-10" y="-10" width="120" height="120" fill="${PAL.gold}"/>
-      <rect x="-10" y="-10" width="120" height="120" fill="url(#mc-${id})"/>
-      ${duneCurves(PAL.sandDark, PAL.clayDark)}
-      ${camelCaravan(65, 65, 0.7)}`);
-  },
-
-  sahel_grassland(id) {
-    const defs = mudclothTriangles(id, PAL.bark, 0.10);
-    return wrap(id, defs, `<rect x="-10" y="-10" width="120" height="120" fill="#C9A857"/>
-      <rect x="-10" y="-10" width="120" height="120" fill="url(#mc-${id})"/>
-      ${acaciaSilhouette(25,60,1.2)}
-      ${acaciaSilhouette(65,75,0.9)}
-      ${hutSilhouette(70, 45, 0.7)}`);
-  },
-
-  savanna(id) {
-    const defs = mudclothTriangles(id, PAL.kenteDark, 0.08);
-    return wrap(id, defs, `<rect x="-10" y="-10" width="120" height="120" fill="#CBAE55"/>
-      <rect x="-10" y="-10" width="120" height="120" fill="url(#mc-${id})"/>
-      ${baobabSilhouette(30,55,1.1)}
-      ${acaciaSilhouette(65,65,0.9)}
-      ${elephantSilhouette(50, 80, 0.6)}`);
-  },
-
-  congo_rainforest(id) {
-    const defs = kenteStripes(id, PAL.kenteDark, PAL.kente, 0.15);
-    return wrap(id, defs, `<rect x="-10" y="-10" width="120" height="120" fill="#1F5D3C"/>
-      <rect x="-10" y="-10" width="120" height="120" fill="url(#ks-${id})"/>
-      <circle cx="25" cy="35" r="18" fill="${PAL.canopy}"/>
-      <circle cx="55" cy="50" r="22" fill="#256B44"/>
-      <circle cx="75" cy="30" r="15" fill="${PAL.canopy}"/>
-      <circle cx="40" cy="65" r="14" fill="#2E7A4C"/>
-      <circle cx="65" cy="70" r="16" fill="${PAL.canopy}"/>
-      <path d="M 20,80 Q 40,60 60,85" stroke="${PAL.riverBlue}" stroke-width="8" fill="none" opacity="0.7"/>
-      ${crocodileSilhouette(45, 80, 0.8)}`);
-  },
-
-  rift_highlands(id) {
-    const defs = mudclothTriangles(id, PAL.stoneDark, 0.12);
-    return wrap(id, defs, `<rect x="-10" y="-10" width="120" height="120" fill="${PAL.highlandGreen}"/>
-      <rect x="-10" y="-10" width="120" height="120" fill="url(#mc-${id})"/>
-      ${mountainRange('#6E7A55')}
-      ${kopjeSilhouette(70, 65, 0.8)}`);
-  },
-
-  volcanic_highlands(id) {
-    const defs = `<radialGradient id="g-${id}" cx="50%" cy="70%" r="60%">
-        <stop offset="0%" stop-color="${PAL.lavaGlow}"/>
-        <stop offset="40%" stop-color="${PAL.lava}"/>
-        <stop offset="100%" stop-color="${PAL.stoneDark}"/>
-      </radialGradient>`;
-    return wrap(id, defs, `<rect x="-10" y="-10" width="120" height="120" fill="${PAL.peak}"/>
-      ${mountainRange('#3B342F', true)}
-      <polygon points="45,55 60,15 75,55" fill="url(#g-${id})"/>
-      <circle cx="60" cy="18" r="5" fill="${PAL.lavaGlow}"/>
-      <polygon points="50,25 55,35 65,35 70,25 65,30 55,30" fill="${PAL.goldLight}" opacity="0.8"/>`);
-  },
-
-  baobab_forest(id) {
-    const defs = mudclothTriangles(id, PAL.bark, 0.12);
-    return wrap(id, defs, `<rect x="-10" y="-10" width="120" height="120" fill="#C7A662"/>
-      <rect x="-10" y="-10" width="120" height="120" fill="url(#mc-${id})"/>
-      ${baobabSilhouette(25,55,1.0)}
-      ${baobabSilhouette(50,65,0.8)}
-      ${baobabSilhouette(75,45,1.1)}`);
-  },
-
-  mangrove_coast(id) {
-    return wrap(id, '', `<rect x="-10" y="-10" width="120" height="45" fill="${PAL.waterShallow}"/>
-      <rect x="-10" y="35" width="120" height="75" fill="#3E6B4E"/>
-      <path d="M-10,35 Q 20,25 50,35 T 110,35" stroke="${PAL.water}" stroke-width="2" fill="none"/>
-      ${waterRipples(50, 25)}
-      <g stroke="${PAL.bark}" stroke-width="3" fill="none">
-        <path d="M20,45 Q25,65 30,85 M30,45 Q35,65 40,85"/>
-        <path d="M60,45 Q65,65 70,85 M70,45 Q75,65 80,85"/>
-        <path d="M40,40 Q45,55 50,70"/>
-      </g>
-      <ellipse cx="25" cy="42" rx="12" ry="6" fill="#4C7E58"/>
-      <ellipse cx="65" cy="38" rx="14" ry="7" fill="#4C7E58"/>
-      ${fishSchool(80, 70, 0.6)}`);
-  },
-
-  nile_valley(id) {
-    const defs = mudclothTriangles(id, PAL.kenteDark, 0.08);
-    return wrap(id, defs, `<rect x="-10" y="-10" width="120" height="120" fill="#CDBB6E"/>
-      <rect x="-10" y="-10" width="120" height="120" fill="url(#mc-${id})"/>
-      <path d="M -10,10 Q 30,40 20,70 Q 10,95 30,110" stroke="${PAL.riverBlue}" stroke-width="18" fill="none" opacity="0.9"/>
-      <path d="M -10,10 Q 30,40 20,70 Q 10,95 30,110" stroke="${PAL.waterShallow}" stroke-width="6" fill="none" opacity="0.9"/>
-      ${cropsSilhouette(60, 75, 0.9)}
-      ${cropsSilhouette(80, 60, 0.7)}`);
-  },
-
-  oasis(id) {
-    const defs = mudclothTriangles(id, PAL.clayDark, 0.10);
-    return wrap(id, defs, `<rect x="-10" y="-10" width="120" height="120" fill="${PAL.gold}"/>
-      <rect x="-10" y="-10" width="120" height="120" fill="url(#mc-${id})"/>
-      ${duneCurves(PAL.sandDark, PAL.gold)}
-      <ellipse cx="50" cy="72" rx="22" ry="10" fill="${PAL.riverBlue}"/>
-      <ellipse cx="50" cy="72" rx="18" ry="7" fill="${PAL.waterShallow}"/>
-      ${palmSilhouette(35,65,1.0)}
-      ${palmSilhouette(65,60,0.8)}`);
-  },
+const VARIANT_GENERATORS = {
+  ocean: [svgOceanA, svgOceanB, svgOceanC],
+  coast: [() => svgCoastVariant(-4), () => svgCoastVariant(0), () => svgCoastVariant(6)],
+  sahara_desert: [() => svgSaharaVariant(-6, false), () => svgSaharaVariant(4, false), () => svgSaharaVariant(0, true)],
+  sahel_grassland: [() => svgSahelVariant(0), () => svgSahelVariant(1), () => svgSahelVariant(2)],
+  savanna: [() => svgSavannaVariant(0), () => svgSavannaVariant(1), () => svgSavannaVariant(2)],
+  congo_rainforest: [() => svgRainforestVariant(0), () => svgRainforestVariant(1), () => svgRainforestVariant(2)],
+  rift_highlands: [() => svgRiftHighlandsVariant(0), () => svgRiftHighlandsVariant(1), () => svgRiftHighlandsVariant(2)],
+  volcanic_highlands: [() => svgVolcanicVariant(0), () => svgVolcanicVariant(1), () => svgVolcanicVariant(2)],
+  baobab_forest: [() => svgBaobabForestVariant(0), () => svgBaobabForestVariant(1), () => svgBaobabForestVariant(2)],
+  mangrove_coast: [() => svgMangroveVariant(0), () => svgMangroveVariant(1), () => svgMangroveVariant(2)],
+  nile_valley: [() => svgNileValleyVariant(0), () => svgNileValleyVariant(1), () => svgNileValleyVariant(2)],
+  oasis: [() => svgOasisVariant(0), () => svgOasisVariant(1), () => svgOasisVariant(2)],
 };
 
 export const BIOMES = {
@@ -339,33 +411,69 @@ export const BIOMES = {
 
 const _svgCache = new Map();
 
-/** Returns raw inline SVG markup string for a biome tile (cached). */
-export function getBiomeSVG(biomeId) {
-  if (_svgCache.has(biomeId)) return _svgCache.get(biomeId);
-  const gen = svgGenerators[biomeId] || svgGenerators.savanna;
-  const svg = gen(biomeId);
-  _svgCache.set(biomeId, svg);
+/** Returns raw inline SVG markup string for a biome tile variant (0-2), cached. */
+export function getBiomeSVG(biomeId, variant = 0) {
+  const key = `${biomeId}:${variant}`;
+  if (_svgCache.has(key)) return _svgCache.get(key);
+  const generators = VARIANT_GENERATORS[biomeId] || VARIANT_GENERATORS.savanna;
+  const gen = generators[variant % generators.length];
+  const svg = gen();
+  _svgCache.set(key, svg);
   return svg;
 }
 
 /** Returns an HTMLImageElement (decoded from inline SVG data-URI) ready for canvas drawImage, cached + preloaded. */
 const _imgCache = new Map();
-export function getBiomeImage(biomeId) {
-  if (_imgCache.has(biomeId)) return _imgCache.get(biomeId);
-  const svg = getBiomeSVG(biomeId);
+export function getBiomeImage(biomeId, variant = 0) {
+  const key = `${biomeId}:${variant}`;
+  if (_imgCache.has(key)) return _imgCache.get(key);
+  const svg = getBiomeSVG(biomeId, variant);
   const img = new Image();
   img.decoding = 'async';
   img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
-  _imgCache.set(biomeId, img);
+  _imgCache.set(key, img);
   return img;
 }
 
 export function preloadAllBiomeImages() {
-  return Promise.all(Object.keys(BIOMES).map(id => new Promise((resolve) => {
-    const img = getBiomeImage(id);
-    if (img.complete) resolve();
-    else { img.onload = () => resolve(); img.onerror = () => resolve(); }
-  })));
+  const promises = [];
+  for (const id of Object.keys(BIOMES)) {
+    for (let v = 0; v < 3; v++) {
+      const img = getBiomeImage(id, v);
+      if (!img.complete) {
+        promises.push(new Promise((resolve) => { img.onload = () => resolve(); img.onerror = () => resolve(); }));
+      }
+    }
+  }
+  return Promise.all(promises);
+}
+
+// --- fertile riverbank overlay (drawn atop any biome tile adjacent to a river) --------
+
+function svgFertileOverlay(seed) {
+  const id = uid();
+  const defs = `<radialGradient id="g-${id}" cx="50%" cy="50%" r="70%">
+    <stop offset="0%" stop-color="${PAL.fertileLight}" stop-opacity="0.5"/>
+    <stop offset="100%" stop-color="${PAL.fertile}" stop-opacity="0"/>
+  </radialGradient>`;
+  const sprouts = seed === 0
+    ? `<g fill="${PAL.fertile}" opacity="0.75"><path d="M30,72 L30,60 M30,60 Q26,64 24,60 M30,60 Q34,64 36,60"/><path d="M68,66 L68,54 M68,54 Q64,58 62,54 M68,54 Q72,58 74,54"/></g>`
+    : seed === 1
+    ? `<g fill="${PAL.fertile}" opacity="0.75"><path d="M50,74 L50,58 M50,58 Q45,63 42,58 M50,58 Q55,63 58,58"/></g>`
+    : `<g fill="${PAL.fertile}" opacity="0.75"><path d="M22,60 L22,48 M22,48 Q18,52 16,48 M22,48 Q26,52 28,48"/><path d="M74,74 L74,62 M74,62 Q70,66 68,62 M74,62 Q78,66 80,62"/></g>`;
+  return wrap(defs, `<rect x="-10" y="-10" width="120" height="120" fill="url(#g-${id})"/>${sprouts}`, 'transparent');
+}
+
+const _fertileCache = new Map();
+export function getFertileOverlayImage(variant = 0) {
+  const key = variant % 3;
+  if (_fertileCache.has(key)) return _fertileCache.get(key);
+  const svg = svgFertileOverlay(key);
+  const img = new Image();
+  img.decoding = 'async';
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  _fertileCache.set(key, img);
+  return img;
 }
 
 export const PALETTE = PAL;

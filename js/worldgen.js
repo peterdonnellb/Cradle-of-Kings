@@ -1,7 +1,7 @@
 // worldgen.js — Procedural generation of the hex world map
 
 import { ValueNoise2D, mulberry32, hashSeedFromString } from './noise.js';
-import { neighbors, hexKey, hexDistance } from './hex.js';
+import { neighbors, hexKey, hexDistance, directionBetween } from './hex.js';
 
 /**
  * Tile shape: {
@@ -52,7 +52,8 @@ export function generateWorld({ width = 42, height = 30, seed = 'cradle', numPla
       tiles.set(hexKey(q, r), {
         q, r, col, row,
         elevation, moisture, latFactor,
-        biome: null, isRiver: false, isCoast: false,
+        biome: null, isRiver: false, isCoast: false, riverDirs: [], isRiverBank: false,
+        artVariant: Math.floor(rand() * 3), artFlip: rand() > 0.5,
         resource: null, owner: null, cityId: null, unitId: null,
       });
     }
@@ -107,9 +108,18 @@ export function generateWorld({ width = 42, height = 30, seed = 'cradle', numPla
     }
   }
 
-  // Pass 3: carve rivers from highland sources down toward the sea
+  // Pass 3: carve rivers from highland sources down toward the sea, recording which
+  // hex edge each river tile flows through (riverDirs) so the renderer can draw a
+  // continuous ribbon of water across tile boundaries instead of an isolated squiggle.
   const riverSources = [...tiles.values()]
     .filter(t => (t.biome === 'rift_highlands' || t.biome === 'volcanic_highlands') && rand() > 0.85);
+
+  function linkRiver(a, b) {
+    const dAB = directionBetween(a, b);
+    const dBA = directionBetween(b, a);
+    if (dAB >= 0 && !a.riverDirs.includes(dAB)) a.riverDirs.push(dAB);
+    if (dBA >= 0 && !b.riverDirs.includes(dBA)) b.riverDirs.push(dBA);
+  }
 
   for (const source of riverSources) {
     let current = source;
@@ -127,9 +137,21 @@ export function generateWorld({ width = 42, height = 30, seed = 'cradle', numPla
       if (!candidates.length) break;
       candidates.sort((a, b) => a.elevation - b.elevation);
       const next = candidates[0];
+      linkRiver(current, next);
       if (next.biome === 'ocean' || next.biome === 'coast') { next.isRiver = true; break; }
       current = next;
     }
+  }
+
+  // Pass 3b: mark non-river tiles adjacent to a river as fertile riverbank (visual + gets a
+  // lush-green fertile overlay in the renderer, echoing how real river valleys green their banks).
+  for (const tile of tiles.values()) {
+    if (tile.isRiver || !tile.biome) continue;
+    const nextToRiver = neighbors(tile.q, tile.r).some(n => {
+      const nt = tiles.get(hexKey(n.q, n.r));
+      return nt && nt.isRiver;
+    });
+    if (nextToRiver && tile.biome !== 'ocean' && tile.biome !== 'coast') tile.isRiverBank = true;
   }
 
   // Pass 4: sprinkle rare oases within deserts

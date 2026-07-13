@@ -51,13 +51,35 @@ export function hexCorners(center, size = HEX_SIZE) {
   return pts;
 }
 
-const DIRECTIONS = [
+export const DIRECTIONS = [
   { q: 1, r: 0 }, { q: 1, r: -1 }, { q: 0, r: -1 },
   { q: -1, r: 0 }, { q: -1, r: 1 }, { q: 0, r: 1 },
 ];
 
 export function neighbors(q, r) {
   return DIRECTIONS.map(d => ({ q: q + d.q, r: r + d.r }));
+}
+
+/** Index (0-5) of a neighbor direction -> which hex edge (between hexCorner(i) and hexCorner(i+1)) touches that neighbor. */
+export function directionToEdgeIndex(dirIndex) {
+  return (6 - dirIndex) % 6;
+}
+
+/** Midpoint of the hex edge shared with the neighbor in the given direction index — used to draw rivers/roads that flow continuously across tile boundaries. */
+export function edgeMidpoint(center, size, dirIndex) {
+  const e = directionToEdgeIndex(dirIndex);
+  const a = hexCorner(center, size, e);
+  const b = hexCorner(center, size, (e + 1) % 6);
+  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+}
+
+/** Direction index pointing from tile a to adjacent tile b (assumes they are neighbors). */
+export function directionBetween(a, b) {
+  const dq = b.q - a.q, dr = b.r - a.r;
+  for (let i = 0; i < DIRECTIONS.length; i++) {
+    if (DIRECTIONS[i].q === dq && DIRECTIONS[i].r === dr) return i;
+  }
+  return -1;
 }
 
 export function hexDistance(a, b) {

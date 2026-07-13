@@ -16,6 +16,9 @@ import { computeCityYields, cityHasResource } from './cities.js';
 import { getEffectiveCombatStats } from './kingdomEffects.js';
 import { runAITurn, aiAutopickResearch } from './ai.js';
 import { militaryStrength } from './diplomacy.js';
+import { checkVictory, victoryProgress, VICTORY_LABELS } from './victory.js';
+import { saveGame, loadGame, listSaves, deleteSave } from './save.js';
+import { sfx, setMuted, isMuted } from './audio.js';
 
 const canvas = document.getElementById('game-canvas');
 const camera = new Camera(canvas);
@@ -31,6 +34,7 @@ let pointerMoved = false;
 let reachableMap = new Map(); // hexKey -> {q,r,cost,from}
 const pendingGrowthChoices = [];
 let selectedDifficulty = 'normal';
+let gameOver = false;
 
 // ---------- Kingdom selection screen ----------
 
@@ -59,11 +63,84 @@ function buildKingdomSelect() {
     card.addEventListener('click', () => startGame(k.id));
     grid.appendChild(card);
   });
+
+  refreshContinueSection();
+}
+
+async function refreshContinueSection() {
+  const section = document.getElementById('continue-section');
+  if (!section) return;
+  try {
+    const saves = await listSaves();
+    const autosave = saves.find(s => s.slot === 'autosave');
+    if (!autosave) { section.classList.add('hidden'); return; }
+    const k = KINGDOMS[autosave.kingdomId];
+    section.innerHTML = `
+      <button id="continue-btn" class="continue-btn">
+        <span class="continue-emblem">${k ? k.emblem : ''}</span>
+        <span>Continue as ${k ? k.name : 'Unknown'} \u2014 Turn ${autosave.turn}, ${autosave.cityCount} cities</span>
+      </button>`;
+    section.classList.remove('hidden');
+    document.getElementById('continue-btn').addEventListener('click', continueGame);
+  } catch {
+    section.classList.add('hidden');
+  }
+}
+
+async function continueGame() {
+  try {
+    const loaded = await loadGame('autosave');
+    if (!loaded) return;
+    state = loaded.state;
+    humanPlayerId = loaded.humanPlayerId;
+    gameOver = false;
+    pendingGrowthChoices.length = 0;
+    selectedUnit = null;
+    selectedCity = null;
+    reachableMap = new Map();
+    renderer.selected = null;
+    renderer.reachable.clear();
+    renderer.animations.clear();
+    renderer.flashes.clear();
+
+    document.getElementById('start-screen').classList.add('hidden');
+    document.getElementById('game-ui').classList.remove('hidden');
+    document.getElementById('tile-info').classList.add('hidden');
+    document.getElementById('city-panel').classList.add('hidden');
+
+    const human = state.players.get(humanPlayerId);
+    const anyCity = [...state.cities.values()].find(c => c.owner === humanPlayerId);
+    const anyUnit = [...state.units.values()].find(u => u.owner === humanPlayerId);
+    const focus = anyCity || anyUnit || { q: 0, r: 0 };
+    const center = axialToPixel(focus.q, focus.r);
+    renderer.resize();
+    camera.zoom = 1;
+    camera.centerOn(center.x, center.y);
+
+    updateResourceBar();
+    updateKingdomBadge();
+    updateResearchPill();
+    logEvent('Game loaded.');
+    requestAnimationFrame(loop);
+  } catch (err) {
+    console.error('Failed to load save', err);
+  }
 }
 
 function startGame(kingdomId) {
+  gameOver = false;
+  pendingGrowthChoices.length = 0;
+  selectedUnit = null;
+  selectedCity = null;
+  reachableMap = new Map();
+  renderer.selected = null;
+  renderer.reachable.clear();
+  renderer.animations.clear();
+  renderer.flashes.clear();
   document.getElementById('start-screen').classList.add('hidden');
   document.getElementById('game-ui').classList.remove('hidden');
+  document.getElementById('tile-info').classList.add('hidden');
+  document.getElementById('city-panel').classList.add('hidden');
 
   const world = generateWorld({ width: 44, height: 30, seed: `cradle-${Date.now()}`, numPlayers: 4 });
   state = new GameState(world);
@@ -189,7 +266,12 @@ function handleTileClick(clientX, clientY) {
       const targetKingdom = KINGDOMS[state.players.get(unitHere.owner).kingdomId].name;
       if (!window.confirm(`${targetKingdom} is at peace with you. Attacking will declare war. Continue?`)) return;
     }
+    const attackerId = selectedUnit.instanceId, defenderId = unitHere.instanceId;
     const result = state.attack(selectedUnit, tile.q, tile.r);
+    sfx.attackHit();
+    renderer.flashUnit(defenderId, '#F0A8A8');
+    if (result.dmgToAttacker > 0) renderer.flashUnit(attackerId, '#F0A8A8');
+    if (result.defenderDied) sfx.unitDeath();
     logCombat(selectedUnit, unitHere, result);
     if (result.warDeclared) logEvent(`War declared on ${KINGDOMS[state.players.get(unitHere.owner).kingdomId].name}!`);
     if (result.attackerDied || selectedUnit.movesLeft <= 0 || selectedUnit.hasActed) {
@@ -199,6 +281,7 @@ function handleTileClick(clientX, clientY) {
     }
     renderer.selected = { q: tile.q, r: tile.r };
     refreshSidePanels(tile, unitHere, cityHere);
+    checkAndHandleVictory();
     return;
   }
 
@@ -207,7 +290,10 @@ function handleTileClick(clientX, clientY) {
     const path = reconstructPath(reachableMap, key);
     const dest = path[path.length - 1];
     const info = reachableMap.get(key);
+    const fromQ = selectedUnit.q, fromR = selectedUnit.r;
     state.moveUnitTo(selectedUnit, dest.q, dest.r, info.cost);
+    renderer.animateMove(selectedUnit.instanceId, fromQ, fromR, dest.q, dest.r);
+    sfx.move();
     if (selectedUnit.movesLeft > 0) computeUnitReachable(selectedUnit);
     else clearSelection(false);
     renderer.selected = { q: tile.q, r: tile.r };
@@ -283,6 +369,7 @@ function updateTileInfo(tile, unit) {
       const player = state.players.get(humanPlayerId);
       const city = state.foundCity(player, tile.q, tile.r);
       if (city) {
+        sfx.cityFounded();
         logEvent(`You founded ${city.name}.`);
         clearSelection();
         renderer.selected = { q: tile.q, r: tile.r };
@@ -484,13 +571,16 @@ function handleCityEvents(events, isHuman) {
         if (city && e.choices.length) state.applyGrowthChoice(city, e.choices[0]);
       }
     } else if (e.type === 'building_complete' && isHuman) {
+      sfx.buildingComplete();
       logEvent(`${cityName(e.cityId)} completed a ${BUILDINGS[e.buildingId].name}.`);
     } else if (e.type === 'unit_complete' && isHuman) {
       logEvent(`${cityName(e.cityId)} produced a ${UNITS[e.unitId].name}.`);
     } else if (e.type === 'wonder_complete') {
+      sfx.buildingComplete();
       logEvent(`${isHuman ? 'You' : 'A rival'} completed the ${WONDERS[e.wonderId].name}!`);
     } else if (e.type === 'tech_complete') {
       if (isHuman) {
+        sfx.techComplete();
         logEvent(`Research complete: ${TECHS[e.techId].name}.`);
         updateResearchPill();
       }
@@ -526,10 +616,105 @@ function runAITurns() {
     handleCityEvents(events, false);
     const endedPlayer = state.players.get(endingPlayerId);
     if (endedPlayer && !endedPlayer.isHuman) aiAutopickResearch(state, endedPlayer);
+    if (checkAndHandleVictory()) return;
   }
   updateResourceBar();
   updateTurnCounter();
+  autosave();
 }
+
+function autosave() {
+  if (gameOver || !state || !humanPlayerId) return;
+  saveGame(state, humanPlayerId, 'autosave').catch(err => console.warn('Autosave failed:', err));
+}
+
+// ---------- Victory ----------
+
+function checkAndHandleVictory() {
+  if (gameOver || !state) return false;
+  const result = checkVictory(state);
+  if (!result) return false;
+  gameOver = true;
+  showVictoryScreen(result);
+  return true;
+}
+
+function showVictoryScreen(result) {
+  const overlay = document.getElementById('modal-overlay');
+  const content = document.getElementById('modal-content');
+  const winner = state.players.get(result.winner);
+  const k = KINGDOMS[winner.kingdomId];
+  const isHumanWinner = result.winner === humanPlayerId;
+
+  if (isHumanWinner) sfx.victory(); else sfx.defeat();
+
+  content.innerHTML = `
+    <div class="victory-emblem-large">${k.emblem}</div>
+    <div class="modal-title">${isHumanWinner ? 'Victory!' : 'Defeat'}</div>
+    <div class="victory-subtitle">${k.name} achieves the ${result.label} on turn ${state.turn}.</div>
+    <button id="modal-close-btn" class="panel-action-btn modal-close">View Map</button>
+    <button id="new-game-btn" class="panel-action-btn modal-close">New Game</button>
+  `;
+  document.getElementById('modal-close-btn').addEventListener('click', closeModal);
+  document.getElementById('new-game-btn').addEventListener('click', () => {
+    closeModal();
+    document.getElementById('game-ui').classList.add('hidden');
+    document.getElementById('start-screen').classList.remove('hidden');
+    refreshContinueSection();
+  });
+  overlay.classList.remove('hidden');
+}
+
+// ---------- Progress modal ----------
+
+function openProgressModal() {
+  const overlay = document.getElementById('modal-overlay');
+  const content = document.getElementById('modal-content');
+  const human = state.players.get(humanPlayerId);
+  const progress = victoryProgress(state, human);
+  const alive = state.playerOrder.map(id => state.players.get(id)).filter(p => p && p.alive);
+
+  const rows = [
+    ['economic', 'Economic (gold)'],
+    ['cultural', 'Cultural (culture)'],
+    ['religious', 'Religious (temples)'],
+    ['scientific', 'Scientific (all techs)'],
+    ['wonder', 'Wonder (5 wonders)'],
+  ].map(([key, label]) => `
+    <div class="progress-row">
+      <div class="progress-row-label"><span>${label}</span><span>${Math.round(progress[key] * 100)}%</span></div>
+      <div class="mini-bar"><div class="mini-bar-fill" style="width:${Math.round(progress[key] * 100)}%"></div></div>
+    </div>`).join('');
+
+  content.innerHTML = `
+    <div class="modal-title">Path to Victory</div>
+    <div class="tile-info-row small" style="text-align:center;margin-bottom:14px;">Domination: ${alive.length} of ${state.playerOrder.length} kingdoms remain</div>
+    ${rows}
+    <button id="modal-close-btn" class="panel-action-btn modal-close">Close</button>
+  `;
+  document.getElementById('modal-close-btn').addEventListener('click', closeModal);
+  overlay.classList.remove('hidden');
+}
+
+document.getElementById('progress-btn').addEventListener('click', openProgressModal);
+
+// ---------- Save / mute controls ----------
+
+document.getElementById('save-btn').addEventListener('click', async () => {
+  try {
+    await saveGame(state, humanPlayerId, 'autosave');
+    logEvent('Game saved.');
+  } catch (err) {
+    console.error(err);
+    logEvent('Save failed \u2014 this browser may be blocking storage.');
+  }
+});
+
+const muteBtn = document.getElementById('mute-btn');
+muteBtn.addEventListener('click', () => {
+  setMuted(!isMuted());
+  muteBtn.classList.toggle('muted', isMuted());
+});
 
 // ---------- Research pill + tech tree modal ----------
 
@@ -658,7 +843,7 @@ function openDiplomacyModal() {
         case 'war': state.declareWar(humanPlayerId, pid); result = { accepted: true, message: `War declared on ${kName}.` }; break;
         case 'break': state.breakAlliance(humanPlayerId, pid); result = { accepted: true, message: `Alliance with ${kName} broken.` }; break;
       }
-      if (result) logEvent(`${kName}: ${result.message}`);
+      if (result) { sfx.diplomacy(); logEvent(`${kName}: ${result.message}`); }
       updateResourceBar();
       openDiplomacyModal();
     });
@@ -671,10 +856,12 @@ function openDiplomacyModal() {
 document.getElementById('diplomacy-btn').addEventListener('click', openDiplomacyModal);
 
 document.getElementById('end-turn-btn').addEventListener('click', () => {
+  if (gameOver) return;
   clearSelection();
   selectedCity = null;
   document.getElementById('city-panel').classList.add('hidden');
   document.getElementById('tile-info').classList.add('hidden');
+  sfx.turnEnd();
 
   const { events } = state.endTurn(); // human's own turn ends; their cities process
   handleCityEvents(events, true);
@@ -682,6 +869,7 @@ document.getElementById('end-turn-btn').addEventListener('click', () => {
   updateTurnCounter();
   updateResearchPill();
 
+  if (checkAndHandleVictory()) return;
   if (pendingGrowthChoices.length) showNextGrowthModal();
   else runAITurns();
 });
@@ -690,3 +878,9 @@ document.getElementById('end-turn-btn').addEventListener('click', () => {
 
 buildKingdomSelect();
 setupInput();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(err => console.warn('Service worker registration failed:', err));
+  });
+}
