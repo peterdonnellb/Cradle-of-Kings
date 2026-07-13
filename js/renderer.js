@@ -92,7 +92,7 @@ export class Renderer {
         if (city) {
           const owner = state.players.get(city.owner);
           const ring = owner ? KINGDOMS[owner.kingdomId].color : '#F1CE73';
-          const img = getCityImage(tierForPopulation(city.population), ring);
+          const img = getCityImage(tierForPopulation(city.population), ring, city.improvements.includes('walls'), city.isCapital);
           const w = drawSize * 1.5, h = drawSize * 1.15;
           if (img.complete) ctx.drawImage(img, screen.x - w / 2, screen.y - h * 0.62, w, h);
           ctx.font = `${Math.max(10, drawSize * 0.34)}px Mukta, sans-serif`;

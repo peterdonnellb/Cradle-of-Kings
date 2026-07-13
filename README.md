@@ -201,6 +201,39 @@ If true per-tile uniqueness ever becomes a priority, the next step up would be W
 instanced rendering with per-instance random attributes fed to a fragment shader — a
 substantial rendering-engine rewrite, not a tweak.
 
+## Visual overhaul, part 2 (units, cities, UI chrome)
+
+Following the biome/river pass, the same treatment was applied to the two other things
+on screen constantly — units and cities — plus a general UI polish pass.
+
+**Units** went from flat single-color glyph outlines to a proper tiered system:
+every token now sits on a medallion frame that escalates with tier (plain wood for basic,
+bronze for advanced, gold with corner studs for elite, a radiant gold sunburst for
+legendary) — independent from the kingdom-colored ring the renderer draws around it, so
+ownership and power level are two separate, simultaneously-readable signals rather than
+one channel overloaded with two meanings. Mounted/beast units (horse, camel, elephant)
+were rebuilt as bold single-silhouette "pictogram" shapes after an early version with
+separately-layered body parts didn't read clearly at the size units actually render at —
+worth noting since it's a good example of the size-appropriate-silhouette principle
+mattering more than surface detail for a strategy game's unit tokens.
+
+**Cities** gained a fourth tier (capital metropolis, population 10+, with monumental
+gold-trimmed stone architecture) and now visually reflect two pieces of city state that
+used to be invisible on the map: a stone wall ring appears once a city has built Walls,
+and capitals get a small gold finial. Architecture escalates the same way unit gear does —
+thatch and wood at the low end, mud-brick next, then dressed stone with a market street,
+then monumental capital stonework.
+
+**UI chrome** got a depth pass: HUD panels, modals, and cards previously sat flat against
+the background; they now carry real drop shadows and a woven mudcloth-triangle trim strip
+along their top edge, consistent with the pattern language already used in the tile art.
+
+I validated the unit art specifically by rendering every token to PNG and reviewing them
+in a grid before and after — the horse/camel/elephant redesign in particular went through
+two visible iterations because the first pass didn't read clearly at a glance, which is
+the actual bar for a strategy game's unit icons (recognizable in under a second, not
+beautiful under inspection).
+
 ## What's deliberately not included
 
 The original concept doc mentioned two explicitly optional items which this
