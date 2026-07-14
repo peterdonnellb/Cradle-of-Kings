@@ -54,6 +54,8 @@ export class Renderer {
 
     const world = state.world;
     const fog = state.fog;
+    const now = performance.now();
+    const pulse = 0.5 + 0.5 * Math.sin(now / 260); // 0..1 breathing pulse for selection/reachable UI
 
     for (const tile of world.tiles.values()) {
       if (!tile.biome) continue;
@@ -111,21 +113,30 @@ export class Renderer {
 
       if (this.reachable.has(`${tile.q},${tile.r}`)) {
         ctx.beginPath();
-        this._hexPath(screen.x, screen.y, drawSize * 0.92);
-        ctx.fillStyle = 'rgba(216,169,58,0.28)';
+        this._hexPath(screen.x, screen.y, drawSize * 0.93);
+        ctx.fillStyle = `rgba(120, 235, 130, ${0.36 + pulse * 0.14})`;
         ctx.fill();
+        ctx.beginPath();
+        this._hexPath(screen.x, screen.y, drawSize * 0.93);
+        ctx.lineWidth = 2 + pulse * 1.2;
+        ctx.strokeStyle = `rgba(180, 255, 160, ${0.75 + pulse * 0.25})`;
+        ctx.stroke();
       }
 
       if (this.selected && this.selected.q === tile.q && this.selected.r === tile.r) {
         ctx.beginPath();
+        this._hexPath(screen.x, screen.y, drawSize * 0.99);
+        ctx.lineWidth = 6 + pulse * 2;
+        ctx.strokeStyle = `rgba(255, 221, 90, ${0.35 + pulse * 0.2})`;
+        ctx.stroke();
+        ctx.beginPath();
         this._hexPath(screen.x, screen.y, drawSize * 0.96);
-        ctx.lineWidth = 3;
-        ctx.strokeStyle = '#F1CE73';
+        ctx.lineWidth = 3.2;
+        ctx.strokeStyle = '#FFE066';
         ctx.stroke();
       }
     }
 
-    const now = performance.now();
     for (const unit of state.units.values()) {
       const visState = viewerPlayerId ? fog.getState(viewerPlayerId, unit.q, unit.r) : 2;
       if (visState !== 2) continue;
@@ -261,11 +272,19 @@ export class Renderer {
     const player = state.players.get(tile.owner);
     if (!player) return;
     const color = KINGDOMS[player.kingdomId].color;
-    this.ctx.beginPath();
-    this._hexPath(screen.x, screen.y, drawSize * 0.98);
-    this.ctx.lineWidth = 2.5;
-    this.ctx.strokeStyle = color;
-    this.ctx.stroke();
+    const ctx = this.ctx;
+    // Dark contrast pass first so the color border reads clearly against any biome art,
+    // then the kingdom color itself, drawn thicker than before for at-a-glance visibility.
+    ctx.beginPath();
+    this._hexPath(screen.x, screen.y, drawSize * 0.985);
+    ctx.lineWidth = 5.5;
+    ctx.strokeStyle = 'rgba(10,7,4,0.55)';
+    ctx.stroke();
+    ctx.beginPath();
+    this._hexPath(screen.x, screen.y, drawSize * 0.985);
+    ctx.lineWidth = 3.4;
+    ctx.strokeStyle = color;
+    ctx.stroke();
   }
 
   screenToHex(sx, sy) {

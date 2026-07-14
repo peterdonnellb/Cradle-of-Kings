@@ -234,6 +234,39 @@ two visible iterations because the first pass didn't read clearly at a glance, w
 the actual bar for a strategy game's unit icons (recognizable in under a second, not
 beautiful under inspection).
 
+## Visual overhaul, part 3 (resources, crests, and a contrast bug fix)
+
+**Bug fix:** the Zulu kingdom's card color (`#2A1B10`) was identical to the kingdom-select
+card's own background color, making the name "Zulu" literally invisible — not just low
+contrast, the exact same color. This is now fixed as part of a broader palette pass: all
+12 kingdoms previously shared some colors (three used the same red, two used the same
+green, two used the same gold), which hurt both the start screen and in-game territory
+borders, since the same `color` field drives the card's name/accent, the kingdom badge,
+and the on-map territory border and unit ring. All 12 now use genuinely distinct hues
+(gold, terracotta-red, emerald, amber-orange, steel-blue, burgundy, grey-blue, true red,
+magenta, teal, olive, and Tyrian purple for Carthage — a nod to the historical Phoenician
+dye trade) chosen to stay legible as text against a near-black card background.
+
+**Kingdom crests** got more detail and, where it fit, sharper historical grounding: Carthage's
+emblem is now the Sign of Tanit (the actual Phoenician/Punic symbol), Aksum's is a stepped
+obelisk referencing the real Aksumite stelae, and Zulu's is a black-and-white cowhide-pattern
+shield reflecting real Zulu shield design instead of an abstract diamond.
+
+**Resource icons** were redone with the same "encode a second signal in the frame" idea as
+units: the ring around each icon now tells you its category before you even look at the
+symbol inside — plain gold ring for basic resources, a steel double-ring for strategic
+resources (the ones that unlock specific units), gold ring with small corner sparkles for
+luxury resources (the ones that unlock wonders/bonuses).
+
+**Territory borders and the movement-range highlight** were both increased in visibility
+per feedback that they were hard to spot against busy terrain art: borders now draw a dark
+contrast pass underneath the kingdom color (so they read against any biome, not just dark
+ones) and are noticeably thicker; the reachable-tiles highlight when a unit is selected
+switched from a dim gold wash to a vivid, gently pulsing green (chosen deliberately — green
+reads universally as "you can go here" rather than reusing gold, which is already doing
+double duty as the UI's accent color elsewhere), and the selected-tile ring got a soft glow
+behind a brighter core stroke.
+
 ## What's deliberately not included
 
 The original concept doc mentioned two explicitly optional items which this
