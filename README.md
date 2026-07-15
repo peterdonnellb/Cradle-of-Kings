@@ -267,6 +267,53 @@ reads universally as "you can go here" rather than reusing gold, which is alread
 double duty as the UI's accent color elsewhere), and the selected-tile ring got a soft glow
 behind a brighter core stroke.
 
+## Visual overhaul, part 4 (tree realism, unit scale)
+
+Two more rounds of feedback: the trees were hard to identify without already knowing what
+they were meant to be, and units were too small on the tile to make out their details.
+
+**Trees were rebuilt around each species' actual defining silhouette** instead of generic
+blob-and-ellipse shapes. The baobab is the clearest example — it previously used the same
+"trunk + round canopy" template as any other tree, which is exactly backwards, since a
+baobab's whole visual identity is that it does *not* look like a normal tree: a massive
+bulbous barrel trunk topped by sparse, gnarly, almost root-like branches (hence "the
+upside-down tree"). It's rebuilt that way now, with a gradient down the trunk for volume
+and small sparse leaf-tufts rather than a full canopy. The acacia was rebuilt around its
+own defining feature — a wide, flat-topped umbrella canopy with a lit top and shadowed
+underside — instead of a rounded blob. Euphorbia (candelabra tree) and palm both got
+gradient shading for the same reason: a flat silhouette reads as a generic "tree-shaped
+blob" regardless of species, while volume and a species-correct outline is what actually
+makes each one identifiable without a caption.
+
+**Units are now ~45% larger** on the tile (the on-screen token size factor went from 0.62
+to 0.9 of the hex's effective size). I checked the geometry before shipping it: at this
+size a unit token is about half the hex's flat-to-flat width and comfortably inside the
+hex's corner radius, so tokens don't visually collide with units standing on adjacent
+tiles even at the largest zoom level — bigger without creating a new legibility problem
+in the process.
+
+## Visual overhaul, part 5 (units: silhouette to sprite)
+
+The previous unit pass fixed proportions and tiering but kept every unit as a flat,
+single-color silhouette — which was the actual root cause of "I can't tell the horse
+from the camel from the elephant": with no internal shading, three different animals in
+the same brown was fundamentally a color-matching problem, not a shape one.
+
+Units now use a small "sprite" toolkit applied consistently across all 20: a dark outline
+on every major shape (the single highest-impact change — crisp edges separate adjacent
+similarly-colored forms in a way flat silhouettes can't), skin tone kept visually distinct
+from cloth/armor color, a light/shadow two-tone pass on rounded forms for volume, and a
+small eye dot on every face and animal head so it reads as a character rather than a
+paper cutout.
+
+The animals were rebuilt around this directly: horse (warm brown, dark mane strokes at
+the neck), camel (sandy tan — a completely different hue from horse, plus a visible hump
+silhouette), and elephant (grey, with a large ear and visible curled trunk) no longer
+share a palette or a silhouette template. Human units got the same treatment — cloth
+tunic color is now separate from skin tone, with a small role-colored sash (red for
+melee, green for ranged, indigo for defensive/elite) adding another at-a-glance signal
+on top of the existing tier-frame and weapon-material system.
+
 ## What's deliberately not included
 
 The original concept doc mentioned two explicitly optional items which this

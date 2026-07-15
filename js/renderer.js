@@ -153,7 +153,7 @@ export class Renderer {
 
       const center = axialToPixel(drawQ, drawR);
       const screen = camera.worldToScreen(center.x, center.y);
-      const size = HEX_SIZE * camera.zoom * 0.62;
+      const size = HEX_SIZE * camera.zoom * 0.9;
       const img = getUnitImage(unit.type);
       const owner = state.players.get(unit.owner);
       const ring = owner ? KINGDOMS[owner.kingdomId].color : '#F1CE73';

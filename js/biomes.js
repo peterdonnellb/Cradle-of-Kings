@@ -120,44 +120,81 @@ function rockArtDots(cx, cy, scale = 1, color = '#8C3A1F') {
 
 // --- flora & landmark silhouettes -----------------------------------------------
 
-function baobabSilhouette(cx, cy, scale, color = PAL.bark, twin = false) {
-  const canopy = twin
-    ? `<ellipse cx="0" cy="-15" rx="13" ry="9"/><ellipse cx="-10" cy="-19" rx="7" ry="6"/><ellipse cx="10" cy="-18" rx="7.5" ry="6.5"/><ellipse cx="0" cy="-24" rx="6" ry="5"/>`
-    : `<ellipse cx="0" cy="-16" rx="12" ry="9"/><ellipse cx="-9" cy="-20" rx="6" ry="5"/><ellipse cx="9" cy="-19" rx="6.5" ry="5.5"/>`;
-  return `<g transform="translate(${cx},${cy}) scale(${scale})" fill="${color}">
-    ${canopy}
-    <rect x="-3.4" y="-14" width="6.8" height="17" rx="2.4"/>
-    <path d="M -3 3 Q -9 7 -11 12 M 3 3 Q 9 7 11 12 M 0 3 L 0 10" stroke="${color}" stroke-width="1.6" fill="none"/>
-  </g>`;
-}
-
-function acaciaSilhouette(cx, cy, scale, color = '#3B5230') {
+/** Baobab — the defining feature is a massive bulbous trunk topped by sparse, gnarly
+ *  root-like branches (the "upside-down tree" silhouette), not a leafy round canopy. */
+function baobabSilhouette(cx, cy, scale, color = '#6E5E4C', twin = false) {
+  const id = uid();
+  const dark = '#42362A';
+  const light = '#8C7A62';
   return `<g transform="translate(${cx},${cy}) scale(${scale})">
-    <rect x="-1.5" y="-2" width="3" height="11" fill="${PAL.bark}"/>
-    <path d="M -15 -3 Q 0 -15 15 -3 Q 0 -8 -15 -3 Z" fill="${color}"/>
-    <path d="M -10 -5 Q 0 -12 10 -5" fill="none" stroke="${color}" stroke-width="0.6" opacity="0.5"/>
+    <defs><linearGradient id="bt-${id}" x1="0" y1="0" x2="1" y2="0.15">
+      <stop offset="0%" stop-color="${dark}"/><stop offset="42%" stop-color="${color}"/><stop offset="75%" stop-color="${light}"/><stop offset="100%" stop-color="${dark}"/>
+    </linearGradient></defs>
+    <g stroke="${dark}" stroke-width="1.5" fill="none" stroke-linecap="round">
+      <path d="M0,-29 Q-11,-37 -20,-39"/><path d="M0,-29 Q10,-38 18,-37"/>
+      <path d="M0,-29 Q-4,-40 -6,-49"/><path d="M0,-29 Q5,-41 8,-49"/><path d="M0,-29 Q0,-37 -1,-45"/>
+    </g>
+    <g fill="#5C6B3E" opacity="0.85">
+      <circle cx="-20" cy="-39" r="3"/><circle cx="18" cy="-37" r="2.7"/><circle cx="-6" cy="-49" r="2.4"/><circle cx="8" cy="-49" r="2.6"/><circle cx="-1" cy="-45" r="2.2"/>
+    </g>
+    <path d="M-7,11 Q-15,-3 -11,-15 Q-9,-27 0,-31 Q9,-27 11,-15 Q15,-3 7,11 Z" fill="url(#bt-${id})"/>
+    <path d="M-7,11 Q-15,-3 -11,-15 Q-9,-27 -1,-30" fill="none" stroke="${dark}" stroke-width="0.7" opacity="0.55"/>
+    <path d="M3,-28 Q7,-16 5,-2 Q4,6 6,11" fill="none" stroke="${dark}" stroke-width="0.6" opacity="0.4"/>
+    ${twin ? `<path d="M8,5 Q13,-6 10,-17 Q8,-23 2,-25" fill="none" stroke="${dark}" stroke-width="1.1" opacity="0.5"/>` : ''}
   </g>`;
 }
 
-/** Candelabra euphorbia — an iconic African highland/savanna silhouette distinct from acacia. */
+/** Acacia — the defining feature is a wide, flat-topped umbrella canopy (classic savanna
+ *  silhouette), rendered with a lit top / shadowed underside for a sense of volume. */
+function acaciaSilhouette(cx, cy, scale, color = '#4A6741') {
+  const id = uid();
+  const dark = '#2C3D26';
+  const light = '#6E9159';
+  return `<g transform="translate(${cx},${cy}) scale(${scale})">
+    <defs><linearGradient id="ac-${id}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${light}"/><stop offset="100%" stop-color="${color}"/>
+    </linearGradient></defs>
+    <path d="M-1.7,-3 L-2.6,11 L2.6,11 L1.7,-3Z" fill="${PAL.bark}"/>
+    <path d="M-1.4,-3 Q-8,-7 -6.5,-11" stroke="${PAL.bark}" stroke-width="1.3" fill="none"/>
+    <path d="M1.4,-3 Q8,-7 6.5,-12" stroke="${PAL.bark}" stroke-width="1.3" fill="none"/>
+    <path d="M-19,-3 Q-20,-12 -9,-14 Q-4,-20 4,-18 Q11,-20 16,-14 Q21,-11 19,-4 Q10,-8 0,-7 Q-10,-8 -19,-3Z" fill="url(#ac-${id})"/>
+    <path d="M-19,-3 Q0,-10 19,-4 Q10,1.5 0,0.5 Q-10,1.5 -19,-3Z" fill="${dark}" opacity="0.5"/>
+    <path d="M-14,-11 Q0,-17 14,-11" fill="none" stroke="${light}" stroke-width="0.8" opacity="0.55"/>
+  </g>`;
+}
+
+/** Candelabra euphorbia — thick fleshy upright arms, distinct from acacia's flat canopy. */
 function euphorbiaSilhouette(cx, cy, scale, color = '#3E6B4A') {
-  return `<g transform="translate(${cx},${cy}) scale(${scale})" fill="${color}">
-    <rect x="-1.3" y="-2" width="2.6" height="12" rx="1"/>
-    <rect x="-1.1" y="-10" width="2.2" height="9" rx="1"/>
-    <rect x="-5" y="-7" width="2" height="8" rx="1" transform="rotate(-18 -5 -7)"/>
-    <rect x="3" y="-7" width="2" height="8" rx="1" transform="rotate(18 3 -7)"/>
+  const id = uid();
+  const light = '#5C8F6B';
+  return `<g transform="translate(${cx},${cy}) scale(${scale})">
+    <defs><linearGradient id="eu-${id}" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="${color}"/><stop offset="100%" stop-color="${light}"/>
+    </linearGradient></defs>
+    <path d="M-1.6,11 Q-2.2,-1 -1.4,-13 Q-1,-16 1,-16 Q1.8,-2 1.6,11Z" fill="url(#eu-${id})"/>
+    <path d="M-1.3,-3 Q-7,-4 -7.5,-11 Q-7.6,-14 -5.6,-14 Q-5.2,-8 -0.6,-6Z" fill="url(#eu-${id})"/>
+    <path d="M1.3,-5 Q7,-6 7.8,-13 Q8,-16 6,-16 Q5.4,-10 0.6,-8Z" fill="url(#eu-${id})"/>
+    <path d="M-0.7,7 Q-5,6 -5.5,0 Q-5.6,-3 -3.8,-3 Q-3.4,2 0.2,3.6Z" fill="url(#eu-${id})"/>
   </g>`;
 }
 
 function palmSilhouette(cx, cy, scale, color = '#3E7A4A') {
+  const id = uid();
+  const light = '#5FA06B';
   return `<g transform="translate(${cx},${cy}) scale(${scale})">
-    <path d="M 0 8 Q -1.5 -6 0 -10" stroke="${PAL.barkLight}" stroke-width="1.8" fill="none"/>
-    <g fill="${color}">
-      <path d="M0,-10 Q -10,-14 -13,-6 Q -4,-9 0,-10Z"/>
-      <path d="M0,-10 Q 10,-14 13,-6 Q 4,-9 0,-10Z"/>
-      <path d="M0,-10 Q -8,-4 -12,3 Q -3,-4 0,-10Z"/>
-      <path d="M0,-10 Q 8,-4 12,3 Q 3,-4 0,-10Z"/>
-      <path d="M0,-10 Q 0,-2 0,6 Q -1,-3 0,-10Z"/>
+    <defs><linearGradient id="pf-${id}" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="${color}"/><stop offset="100%" stop-color="${light}"/>
+    </linearGradient></defs>
+    <path d="M 0.6 9 Q -1.5 -3 0.4 -10" stroke="${PAL.barkLight}" stroke-width="2" fill="none"/>
+    <path d="M -0.4 3 Q -3 1 -3.6 -3" stroke="${PAL.bark}" stroke-width="0.8" fill="none" opacity="0.6"/>
+    <g fill="url(#pf-${id})">
+      <path d="M0,-10 Q -11,-15 -14,-6 Q -4,-9.5 0,-10Z"/>
+      <path d="M0,-10 Q 11,-15 14,-6 Q 4,-9.5 0,-10Z"/>
+      <path d="M0,-10 Q -9,-3 -13,5 Q -3,-4 0,-10Z"/>
+      <path d="M0,-10 Q 9,-3 13,5 Q 3,-4 0,-10Z"/>
+      <path d="M0,-10 Q -5,-1 -6,8 Q -1,-2 0,-10Z"/>
+      <path d="M0,-10 Q 5,-1 6,8 Q 1,-2 0,-10Z"/>
+      <path d="M0,-10 Q 0,-1 0,7 Q -1,-2 0,-10Z"/>
     </g>
   </g>`;
 }
