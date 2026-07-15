@@ -314,6 +314,51 @@ tunic color is now separate from skin tone, with a small role-colored sash (red 
 melee, green for ranged, indigo for defensive/elite) adding another at-a-glance signal
 on top of the existing tier-frame and weapon-material system.
 
+## Visual overhaul, part 6 (cities and walls: same sprite toolkit)
+
+The sprite toolkit from the unit pass (dark outlines on every shape, buildings split into
+a lit half and a shadowed half instead of one flat fill) is now applied to city art and
+building icons too, for the same reason: flat single-tone shapes read as silhouettes, not
+structures.
+
+**City tiles** (huts, stone buildings, the capital's monumental core) all now have
+two-tone roofs and walls for real volume. The **fortified wall ring** got the most
+substantial rework — it was a plain grey ellipse before, which didn't read as a
+fortification at all. It's now built from individually placed crenellations (battlements)
+sampled around the front-facing arc, plus a small two-tower gatehouse with a dark gate
+opening, so a walled city is now visually unmistakable from an unwalled one at a glance,
+not just "the ellipse is present or absent."
+
+**The 8 building improvement icons** (Granary, Market, Temple, Walls, Forge, Harbor,
+University, and the capital's Palace) got the same treatment — outlined, two-tone roofs
+and facades, and small material details (the Forge's furnace now actually glows, the
+Walls icon shows crenellations along the top instead of a flat bar).
+
+## Visual overhaul, part 7 (tree clipping fix, mountains, resources, crests, coast)
+
+**Trees were being cut off at hex edges** — confirmed by rendering every biome variant at
+high resolution and looking closely, several baobabs were losing their branch tips against
+the hex boundary. Root cause: the baobab's branch reach (49 units from its anchor point at
+scale 1) was large relative to the hex's own radius (50 units), so any placement that
+wasn't dead-center could clip. Fixed two ways: the baobab and acacia silhouettes are now
+meaningfully more compact (baobab's branch reach dropped from 49 to 33 units), and I wrote
+a small point-in-polygon checker that tests every tree placement's bounding box against the
+actual hex clip path — it caught 10 remaining risky placements across the savanna, sahel,
+baobab forest, and rift highlands variants, which are now repositioned with safe margins.
+Zero flagged placements remain.
+
+**Mountains, resource icons, and kingdom crests** all received the same sprite treatment
+as units/cities/buildings: a dark outline on every shape, plus (for mountains specifically)
+each peak split into a lit face and a shadowed face instead of one flat triangle, so ranges
+have real form instead of reading as a flat paper cutout silhouette.
+
+**Coast tiles no longer show sand.** They previously rendered a sandy beach fill across
+the bottom third of the tile, which visually implied "you can walk here" even though coast
+is a water tile that land units can't enter — a genuine information/art mismatch, not just
+a style preference. Coast is now entirely water-toned (turquoise, brighter than deep ocean)
+with faint pale patches suggesting a visible sandy seafloor through clear shallow water,
+rather than dry land above the waterline.
+
 ## What's deliberately not included
 
 The original concept doc mentioned two explicitly optional items which this

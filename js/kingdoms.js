@@ -38,9 +38,10 @@ export const KINGDOMS = {
     effects: { riverProductionMult: 0.25, wonderCostMult: -0.15 },
     startingBiomePref: ['nile_valley', 'sahara_desert'],
     emblem: crest('kemet', '#D9A62E', '#8C3A1F',
-      `<polygon points="50,24 62,58 50,80 38,58" fill="#223A5E"/>
-       <circle cx="50" cy="20" r="7" fill="#F6EFDD"/><circle cx="50" cy="20" r="7" fill="none" stroke="#8C3A1F" stroke-width="1.4"/>
-       <path d="M30,66 Q50,74 70,66" fill="none" stroke="#5FBEC4" stroke-width="3"/>`),
+      `<polygon points="50,24 62,58 50,80 38,58" fill="#223A5E" stroke="#1C1208" stroke-width="1.2"/>
+       <circle cx="50" cy="20" r="7" fill="#F6EFDD" stroke="#1C1208" stroke-width="1"/><circle cx="50" cy="20" r="7" fill="none" stroke="#8C3A1F" stroke-width="1.4"/>
+       <path d="M30,66 Q50,74 70,66" fill="none" stroke="#5FBEC4" stroke-width="3"/>
+       <path d="M30,66 Q50,74 70,66" fill="none" stroke="#1C1208" stroke-width="0.6" opacity="0.4"/>`),
   },
   kush: {
     id: 'kush', name: 'Kush', subtitle: 'Archers of Nubia',
@@ -50,9 +51,10 @@ export const KINGDOMS = {
     startingBiomePref: ['savanna', 'nile_valley'],
     emblem: crest('kush', '#C94A3B', '#5A2018',
       `<path d="M34,62 Q50,18 66,62" stroke="#F6EFDD" stroke-width="3.4" fill="none"/>
+       <path d="M34,62 Q50,18 66,62" stroke="#1C1208" stroke-width="0.8" fill="none" opacity="0.35"/>
        <line x1="50" y1="26" x2="50" y2="68" stroke="#F6EFDD" stroke-width="2.6"/>
-       <polygon points="50,24 46,32 54,32" fill="#F6EFDD"/>
-       <polygon points="42,62 38,68 46,68" fill="#2A1B10"/><polygon points="58,62 54,68 62,68" fill="#2A1B10"/>`),
+       <polygon points="50,24 46,32 54,32" fill="#F6EFDD" stroke="#1C1208" stroke-width="0.8"/>
+       <polygon points="42,62 38,68 46,68" fill="#2A1B10" stroke="#1C1208" stroke-width="0.6"/><polygon points="58,62 54,68 62,68" fill="#2A1B10" stroke="#1C1208" stroke-width="0.6"/>`),
   },
   aksum: {
     id: 'aksum', name: 'Aksum', subtitle: 'Traders of the Red Sea',
@@ -61,10 +63,10 @@ export const KINGDOMS = {
     effects: { coastalGoldFlat: 2 },
     startingBiomePref: ['coast', 'rift_highlands'],
     emblem: crest('aksum', '#2F9E68', '#164A30',
-      `<rect x="45" y="18" width="10" height="52" fill="#D8A93A"/>
-       <rect x="41" y="66" width="18" height="6" fill="#8C3A1F"/>
+      `<rect x="45" y="18" width="10" height="52" fill="#D8A93A" stroke="#1C1208" stroke-width="1"/>
+       <rect x="41" y="66" width="18" height="6" fill="#8C3A1F" stroke="#1C1208" stroke-width="1"/>
        <rect x="45" y="26" width="10" height="4" fill="#164A30"/><rect x="45" y="38" width="10" height="4" fill="#164A30"/><rect x="45" y="50" width="10" height="4" fill="#164A30"/>
-       <polygon points="42,18 50,10 58,18" fill="#F1CE73"/>`),
+       <polygon points="42,18 50,10 58,18" fill="#F1CE73" stroke="#1C1208" stroke-width="1"/>`),
   },
   mali: {
     id: 'mali', name: 'Mali', subtitle: 'Empire of Gold',
@@ -73,9 +75,9 @@ export const KINGDOMS = {
     effects: { cityGoldMult: 0.3 },
     startingBiomePref: ['savanna', 'sahara_desert'],
     emblem: crest('mali', '#F1CE73', '#B5502D',
-      `<circle cx="50" cy="50" r="18" fill="#8C3A1F"/><circle cx="50" cy="50" r="18" fill="none" stroke="#5A2410" stroke-width="1.4"/>
-       <circle cx="50" cy="50" r="10" fill="#F1CE73"/>
-       <circle cx="34" cy="30" r="5" fill="#F1CE73" opacity="0.9"/><circle cx="68" cy="32" r="4" fill="#F1CE73" opacity="0.85"/>`),
+      `<circle cx="50" cy="50" r="18" fill="#8C3A1F" stroke="#1C1208" stroke-width="1.2"/><circle cx="50" cy="50" r="18" fill="none" stroke="#5A2410" stroke-width="1.4"/>
+       <circle cx="50" cy="50" r="10" fill="#F1CE73" stroke="#1C1208" stroke-width="0.8"/>
+       <circle cx="34" cy="30" r="5" fill="#F1CE73" opacity="0.9" stroke="#1C1208" stroke-width="0.6"/><circle cx="68" cy="32" r="4" fill="#F1CE73" opacity="0.85" stroke="#1C1208" stroke-width="0.6"/>`),
   },
   songhai: {
     id: 'songhai', name: 'Songhai', subtitle: 'Riders of the Sahel',
@@ -85,8 +87,9 @@ export const KINGDOMS = {
     startingBiomePref: ['sahel_grassland', 'nile_valley'],
     emblem: crest('songhai', '#4A7BA6', '#1F3A54',
       `<path d="M30,66 Q50,20 70,66" fill="none" stroke="#F6EFDD" stroke-width="4"/>
-       <path d="M46,30 Q50,22 54,30 L52,36 L48,36Z" fill="#F6EFDD"/>
-       <circle cx="30" cy="66" r="4.5" fill="#F6EFDD"/><circle cx="70" cy="66" r="4.5" fill="#F6EFDD"/>
+       <path d="M30,66 Q50,20 70,66" fill="none" stroke="#1C1208" stroke-width="0.8" opacity="0.3"/>
+       <path d="M46,30 Q50,22 54,30 L52,36 L48,36Z" fill="#F6EFDD" stroke="#1C1208" stroke-width="0.7"/>
+       <circle cx="30" cy="66" r="4.5" fill="#F6EFDD" stroke="#1C1208" stroke-width="0.8"/><circle cx="70" cy="66" r="4.5" fill="#F6EFDD" stroke="#1C1208" stroke-width="0.8"/>
        <path d="M22,70 Q50,80 78,70" fill="none" stroke="#5FBEC4" stroke-width="2.6"/>`),
   },
   benin: {
@@ -96,10 +99,10 @@ export const KINGDOMS = {
     effects: { wallsDefenseMult: 0.4, freeWallsAtPop: 3 },
     startingBiomePref: ['congo_rainforest', 'baobab_forest'],
     emblem: crest('benin', '#4A3427', '#241A10',
-      `<rect x="32" y="30" width="36" height="36" fill="#A03955"/>
+      `<rect x="32" y="30" width="36" height="36" fill="#A03955" stroke="#1C1208" stroke-width="1.2"/>
        <rect x="39" y="30" width="6" height="36" fill="#D8A93A"/><rect x="55" y="30" width="6" height="36" fill="#D8A93A"/>
-       <rect x="32" y="30" width="36" height="5" fill="#D8A93A"/>
-       <circle cx="50" cy="48" r="5" fill="#F1CE73"/>`),
+       <rect x="32" y="30" width="36" height="5" fill="#D8A93A" stroke="#1C1208" stroke-width="0.8"/>
+       <circle cx="50" cy="48" r="5" fill="#F1CE73" stroke="#1C1208" stroke-width="0.8"/>`),
   },
   zimbabwe: {
     id: 'zimbabwe', name: 'Zimbabwe', subtitle: 'Masters of Stone',
@@ -109,8 +112,9 @@ export const KINGDOMS = {
     startingBiomePref: ['rift_highlands', 'savanna'],
     emblem: crest('zimbabwe', '#8C9AA8', '#4E5761',
       `<polygon points="50,20 68,33 68,59 50,72 32,59 32,33" fill="none" stroke="#F6EFDD" stroke-width="3.2"/>
+       <polygon points="50,20 68,33 68,59 50,72 32,59 32,33" fill="none" stroke="#1C1208" stroke-width="0.7" opacity="0.4"/>
        <polygon points="50,32 60,39 60,55 50,62 40,55 40,39" fill="none" stroke="#F6EFDD" stroke-width="1.6" opacity="0.8"/>
-       <circle cx="50" cy="47" r="4" fill="#D8A93A"/>`),
+       <circle cx="50" cy="47" r="4" fill="#D8A93A" stroke="#1C1208" stroke-width="0.8"/>`),
   },
   zulu: {
     id: 'zulu', name: 'Zulu', subtitle: 'Impi Warriors',
@@ -119,10 +123,10 @@ export const KINGDOMS = {
     effects: { meleeAttackMultOnAttack: 0.2 },
     startingBiomePref: ['savanna', 'rift_highlands'],
     emblem: crest('zulu', '#3A281A', '#1C1208',
-      `<path d="M50,20 L64,30 L64,66 L50,80 L36,66 L36,30 Z" fill="#F1E7D0"/>
+      `<path d="M50,20 L64,30 L64,66 L50,80 L36,66 L36,30 Z" fill="#F1E7D0" stroke="#1C1208" stroke-width="1.2"/>
        <path d="M50,20 L64,30 L64,66 L50,80 Z" fill="#2A1B10"/>
-       <rect x="48.5" y="18" width="3" height="64" fill="#8C6239"/>
-       <polygon points="46,14 50,4 54,14" fill="#D6402C"/>`),
+       <rect x="48.5" y="18" width="3" height="64" fill="#8C6239" stroke="#1C1208" stroke-width="0.5"/>
+       <polygon points="46,14 50,4 54,14" fill="#D6402C" stroke="#1C1208" stroke-width="0.8"/>`),
   },
   yoruba: {
     id: 'yoruba', name: 'Yoruba', subtitle: 'Keepers of Culture',
@@ -131,9 +135,9 @@ export const KINGDOMS = {
     effects: { cultureMult: 0.25, happinessFlat: 5 },
     startingBiomePref: ['congo_rainforest', 'savanna'],
     emblem: crest('yoruba', '#C24E8C', '#7A2E52',
-      `<ellipse cx="50" cy="50" rx="7" ry="8" fill="#F6EFDD"/>
-       <ellipse cx="36" cy="44" rx="6" ry="7" fill="#F6EFDD" opacity="0.92"/><ellipse cx="64" cy="44" rx="6" ry="7" fill="#F6EFDD" opacity="0.92"/>
-       <ellipse cx="38" cy="62" rx="6" ry="7" fill="#F6EFDD" opacity="0.92"/><ellipse cx="62" cy="62" rx="6" ry="7" fill="#F6EFDD" opacity="0.92"/>
+      `<ellipse cx="50" cy="50" rx="7" ry="8" fill="#F6EFDD" stroke="#1C1208" stroke-width="0.9"/>
+       <ellipse cx="36" cy="44" rx="6" ry="7" fill="#F6EFDD" opacity="0.92" stroke="#1C1208" stroke-width="0.8"/><ellipse cx="64" cy="44" rx="6" ry="7" fill="#F6EFDD" opacity="0.92" stroke="#1C1208" stroke-width="0.8"/>
+       <ellipse cx="38" cy="62" rx="6" ry="7" fill="#F6EFDD" opacity="0.92" stroke="#1C1208" stroke-width="0.8"/><ellipse cx="62" cy="62" rx="6" ry="7" fill="#F6EFDD" opacity="0.92" stroke="#1C1208" stroke-width="0.8"/>
        <circle cx="50" cy="50" r="2.4" fill="#7A2E52"/>`),
   },
   swahili: {
@@ -143,10 +147,10 @@ export const KINGDOMS = {
     effects: { tradeRouteCapacityBonus: 2 },
     startingBiomePref: ['coast', 'mangrove_coast'],
     emblem: crest('swahili', '#2E93A6', '#144F5C',
-      `<path d="M26,60 Q50,72 74,60 L68,68 Q50,76 32,68 Z" fill="#F1CE73"/>
+      `<path d="M26,60 Q50,72 74,60 L68,68 Q50,76 32,68 Z" fill="#F1CE73" stroke="#1C1208" stroke-width="1"/>
        <path d="M50,18 L50,60" stroke="#F1CE73" stroke-width="3"/>
-       <path d="M50,20 Q72,30 50,42Z" fill="#F6EFDD"/>
-       <path d="M50,24 Q34,32 50,40Z" fill="#F6EFDD" opacity="0.85"/>`),
+       <path d="M50,20 Q72,30 50,42Z" fill="#F6EFDD" stroke="#1C1208" stroke-width="0.8"/>
+       <path d="M50,24 Q34,32 50,40Z" fill="#F6EFDD" opacity="0.85" stroke="#1C1208" stroke-width="0.7"/>`),
   },
   ethiopia: {
     id: 'ethiopia', name: 'Ethiopia', subtitle: 'Highland Fortress',
@@ -155,8 +159,8 @@ export const KINGDOMS = {
     effects: { highlandDefenseBonus: 0.25, highlandMoveFree: true },
     startingBiomePref: ['rift_highlands', 'volcanic_highlands'],
     emblem: crest('ethiopia', '#8A9A3C', '#4C5620',
-      `<polygon points="30,66 50,22 70,66" fill="#4C5620"/><polygon points="40,66 50,38 60,66" fill="#D8A93A"/>
-       <rect x="47" y="12" width="6" height="14" fill="#F1CE73"/><rect x="43" y="16" width="14" height="4" fill="#F1CE73"/>`),
+      `<polygon points="30,66 50,22 70,66" fill="#4C5620" stroke="#1C1208" stroke-width="1.1"/><polygon points="40,66 50,38 60,66" fill="#D8A93A" stroke="#1C1208" stroke-width="0.8"/>
+       <rect x="47" y="12" width="6" height="14" fill="#F1CE73" stroke="#1C1208" stroke-width="0.8"/><rect x="43" y="16" width="14" height="4" fill="#F1CE73" stroke="#1C1208" stroke-width="0.8"/>`),
   },
   carthage: {
     id: 'carthage', name: 'Carthage', subtitle: 'Lords of the Sea',
@@ -166,6 +170,7 @@ export const KINGDOMS = {
     startingBiomePref: ['coast', 'sahara_desert'],
     emblem: crest('carthage', '#6B3FA0', '#33205C',
       `<circle cx="50" cy="38" r="9" fill="none" stroke="#F1CE73" stroke-width="2.6"/>
+       <circle cx="50" cy="38" r="9" fill="none" stroke="#1C1208" stroke-width="0.7" opacity="0.4"/>
        <line x1="50" y1="47" x2="50" y2="68" stroke="#F1CE73" stroke-width="2.6"/>
        <line x1="38" y1="58" x2="62" y2="58" stroke="#F1CE73" stroke-width="2.6"/>
        <path d="M30,72 Q50,80 70,72" fill="none" stroke="#5FBEC4" stroke-width="2.4"/>`),

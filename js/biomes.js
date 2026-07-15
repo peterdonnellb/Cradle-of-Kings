@@ -130,17 +130,17 @@ function baobabSilhouette(cx, cy, scale, color = '#6E5E4C', twin = false) {
     <defs><linearGradient id="bt-${id}" x1="0" y1="0" x2="1" y2="0.15">
       <stop offset="0%" stop-color="${dark}"/><stop offset="42%" stop-color="${color}"/><stop offset="75%" stop-color="${light}"/><stop offset="100%" stop-color="${dark}"/>
     </linearGradient></defs>
-    <g stroke="${dark}" stroke-width="1.5" fill="none" stroke-linecap="round">
-      <path d="M0,-29 Q-11,-37 -20,-39"/><path d="M0,-29 Q10,-38 18,-37"/>
-      <path d="M0,-29 Q-4,-40 -6,-49"/><path d="M0,-29 Q5,-41 8,-49"/><path d="M0,-29 Q0,-37 -1,-45"/>
+    <g stroke="${dark}" stroke-width="1.3" fill="none" stroke-linecap="round">
+      <path d="M0,-19 Q-7,-25 -13,-26"/><path d="M0,-19 Q7,-26 12,-25"/>
+      <path d="M0,-19 Q-2,-27 -4,-33"/><path d="M0,-19 Q3,-27 5,-33"/><path d="M0,-19 Q0,-25 -1,-30"/>
     </g>
-    <g fill="#5C6B3E" opacity="0.85">
-      <circle cx="-20" cy="-39" r="3"/><circle cx="18" cy="-37" r="2.7"/><circle cx="-6" cy="-49" r="2.4"/><circle cx="8" cy="-49" r="2.6"/><circle cx="-1" cy="-45" r="2.2"/>
+    <g fill="#5C6B3E" opacity="0.9" stroke="${dark}" stroke-width="0.4">
+      <circle cx="-13" cy="-26" r="2.3"/><circle cx="12" cy="-25" r="2.1"/><circle cx="-4" cy="-33" r="1.9"/><circle cx="5" cy="-33" r="2"/><circle cx="-1" cy="-30" r="1.7"/>
     </g>
-    <path d="M-7,11 Q-15,-3 -11,-15 Q-9,-27 0,-31 Q9,-27 11,-15 Q15,-3 7,11 Z" fill="url(#bt-${id})"/>
-    <path d="M-7,11 Q-15,-3 -11,-15 Q-9,-27 -1,-30" fill="none" stroke="${dark}" stroke-width="0.7" opacity="0.55"/>
-    <path d="M3,-28 Q7,-16 5,-2 Q4,6 6,11" fill="none" stroke="${dark}" stroke-width="0.6" opacity="0.4"/>
-    ${twin ? `<path d="M8,5 Q13,-6 10,-17 Q8,-23 2,-25" fill="none" stroke="${dark}" stroke-width="1.1" opacity="0.5"/>` : ''}
+    <path d="M-6,10 Q-10,-1 -8,-10 Q-6,-17 0,-19 Q6,-17 8,-10 Q10,-1 6,10 Z" fill="url(#bt-${id})" stroke="${dark}" stroke-width="0.9"/>
+    <path d="M-6,10 Q-10,-1 -8,-10 Q-6,-17 -1,-18.5" fill="none" stroke="${dark}" stroke-width="0.5" opacity="0.55"/>
+    <path d="M2,-17 Q4,-9 3.5,0 Q3,5 5,10" fill="none" stroke="${dark}" stroke-width="0.5" opacity="0.4"/>
+    ${twin ? `<path d="M6,4 Q9,-4 7,-11 Q6,-14.5 2,-16.5" fill="none" stroke="${dark}" stroke-width="0.8" opacity="0.5"/>` : ''}
   </g>`;
 }
 
@@ -154,11 +154,11 @@ function acaciaSilhouette(cx, cy, scale, color = '#4A6741') {
     <defs><linearGradient id="ac-${id}" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="${light}"/><stop offset="100%" stop-color="${color}"/>
     </linearGradient></defs>
-    <path d="M-1.7,-3 L-2.6,11 L2.6,11 L1.7,-3Z" fill="${PAL.bark}"/>
-    <path d="M-1.4,-3 Q-8,-7 -6.5,-11" stroke="${PAL.bark}" stroke-width="1.3" fill="none"/>
-    <path d="M1.4,-3 Q8,-7 6.5,-12" stroke="${PAL.bark}" stroke-width="1.3" fill="none"/>
-    <path d="M-19,-3 Q-20,-12 -9,-14 Q-4,-20 4,-18 Q11,-20 16,-14 Q21,-11 19,-4 Q10,-8 0,-7 Q-10,-8 -19,-3Z" fill="url(#ac-${id})"/>
-    <path d="M-19,-3 Q0,-10 19,-4 Q10,1.5 0,0.5 Q-10,1.5 -19,-3Z" fill="${dark}" opacity="0.5"/>
+    <path d="M-1.5,-2 L-2.3,10 L2.3,10 L1.5,-2Z" fill="${PAL.bark}" stroke="${dark}" stroke-width="0.6"/>
+    <path d="M-1.2,-2 Q-6,-5.5 -5,-8.5" stroke="${PAL.bark}" stroke-width="1.1" fill="none"/>
+    <path d="M1.2,-2 Q6,-5.5 5,-9" stroke="${PAL.bark}" stroke-width="1.1" fill="none"/>
+    <path d="M-14,-2 Q-15,-9 -7,-11 Q-3,-15.5 3,-14 Q8,-15.5 12,-11 Q16,-8.5 14,-3 Q7,-6 0,-5.5 Q-7,-6 -14,-2Z" fill="url(#ac-${id})" stroke="${dark}" stroke-width="0.8"/>
+    <path d="M-14,-2 Q0,-8 14,-3 Q7,1 0,0.5 Q-7,1 -14,-2Z" fill="${dark}" opacity="0.5"/>
     <path d="M-14,-11 Q0,-17 14,-11" fill="none" stroke="${light}" stroke-width="0.8" opacity="0.55"/>
   </g>`;
 }
@@ -229,11 +229,24 @@ function waterRipples(cx, cy, w = 24, color = 'rgba(255,255,255,0.4)') {
 }
 
 function mountainRange(baseColor, midColor, snow = false, shift = 0) {
-  return `<g>
-    <polygon points="${-8 + shift},82 ${20 + shift},28 ${42 + shift},54 ${64 + shift},18 ${108 + shift},82" fill="${baseColor}"/>
-    <polygon points="${6 + shift},82 ${28 + shift},44 ${42 + shift},56 ${58 + shift},82" fill="${midColor}" opacity="0.75"/>
-    ${snow ? `<polygon points="${16 + shift},40 ${20 + shift},28 ${25 + shift},39" fill="#fff" opacity="0.85"/><polygon points="${58 + shift},24 ${64 + shift},18 ${70 + shift},30" fill="#fff" opacity="0.85"/>` : ''}
-  </g>`;
+  const outline = '#241708';
+  const peaks = [
+    { lx: -8 + shift, x: 20 + shift, topY: 28, rx: 42 + shift, baseY: 82 },
+    { lx: 42 + shift, x: 64 + shift, topY: 18, rx: 108 + shift, baseY: 82 },
+  ];
+  let out = '<g>';
+  for (const p of peaks) {
+    out += `<polygon points="${p.lx},${p.baseY} ${p.x},${p.topY} ${p.rx},${p.baseY}" fill="${baseColor}" stroke="${outline}" stroke-width="1.3"/>`;
+    out += `<polygon points="${p.x},${p.topY} ${p.rx},${p.baseY} ${p.x},${p.baseY}" fill="${outline}" opacity="0.22"/>`;
+    out += `<polygon points="${p.lx},${p.baseY} ${p.x},${p.topY} ${p.x},${p.baseY}" fill="#fff" opacity="0.1"/>`;
+    out += `<path d="M${p.x - (p.x - p.lx) * 0.35},${p.baseY - (p.baseY - p.topY) * 0.32} L${p.x},${p.topY + (p.baseY - p.topY) * 0.14}" stroke="${outline}" stroke-width="0.6" opacity="0.3" fill="none"/>`;
+  }
+  out += `<polygon points="${6 + shift},82 ${28 + shift},44 ${42 + shift},56 ${58 + shift},82" fill="${midColor}" stroke="${outline}" stroke-width="1" opacity="0.85"/>`;
+  if (snow) {
+    out += `<polygon points="${16 + shift},40 ${20 + shift},28 ${25 + shift},39" fill="#fff" stroke="${outline}" stroke-width="0.8" opacity="0.92"/><polygon points="${58 + shift},24 ${64 + shift},18 ${70 + shift},30" fill="#fff" stroke="${outline}" stroke-width="0.8" opacity="0.92"/>`;
+  }
+  out += '</g>';
+  return out;
 }
 
 // --- biome SVG generators (3 hand-authored variants each) ------------------------
@@ -260,16 +273,22 @@ function svgOceanC() {
   return wrap(defs, `<rect x="-10" y="-10" width="120" height="120" fill="url(#g-${id})"/>${waterRipples(50, 24, 20)}${waterRipples(24, 54, 22)}${waterRipples(70, 74, 24)}`);
 }
 
-function svgCoastVariant(sandShift) {
+function svgCoastVariant(seed) {
   const id = uid();
-  const shoreY = 78 + sandShift; // where the sand begins — most of the tile stays water
   const defs = `<linearGradient id="g-${id}" x1="0" y1="0" x2="0" y2="1">
-    <stop offset="0%" stop-color="${PAL.waterShallow}"/><stop offset="70%" stop-color="#7FD4C9"/><stop offset="100%" stop-color="#BFE8DA"/>
+    <stop offset="0%" stop-color="${PAL.waterShallow}"/><stop offset="55%" stop-color="#7FD4C9"/><stop offset="100%" stop-color="#9FE0D2"/>
   </linearGradient>`;
+  // Pale, low-opacity sandbar patches suggest a visible shallow seafloor through clear water —
+  // the tile still reads unambiguously as water (no dry shoreline), consistent with it being
+  // impassable to land units, but distinct in tone from the darker, deeper ocean tile.
+  const sandbars = seed === 0
+    ? `<ellipse cx="35" cy="70" rx="27" ry="11" fill="${PAL.sand}" opacity="0.22"/><ellipse cx="72" cy="42" rx="18" ry="8" fill="${PAL.sand}" opacity="0.16"/>`
+    : seed === 1
+    ? `<ellipse cx="56" cy="60" rx="32" ry="13" fill="${PAL.sand}" opacity="0.2"/><ellipse cx="20" cy="30" rx="14" ry="7" fill="${PAL.sand}" opacity="0.14"/>`
+    : `<ellipse cx="28" cy="48" rx="20" ry="9" fill="${PAL.sand}" opacity="0.2"/><ellipse cx="70" cy="72" rx="24" ry="10" fill="${PAL.sand}" opacity="0.16"/>`;
   return wrap(defs, `<rect x="-10" y="-10" width="120" height="120" fill="url(#g-${id})"/>
-    ${waterRipples(38, 24, 22)}${waterRipples(64, 46, 20)}
-    <path d="M -10,${shoreY} Q 30,${shoreY - 10} 60,${shoreY} T 130,${shoreY - 6} L 130,110 L -10,110 Z" fill="${PAL.sand}"/>
-    <path d="M -10,${shoreY} Q 30,${shoreY - 10} 60,${shoreY} T 130,${shoreY - 6}" fill="none" stroke="${PAL.waterFoam}" stroke-width="2.4" opacity="0.75"/>`);
+    ${sandbars}
+    ${waterRipples(38, 24, 22)}${waterRipples(64, 46, 20)}${waterRipples(46, 74, 20)}`);
 }
 
 function svgSaharaVariant(duneShift, palmOasis) {
@@ -292,8 +311,8 @@ function svgSahelVariant(treeSeed) {
   const trees = treeSeed === 0
     ? `${acaciaSilhouette(28, 62, 1)}${acaciaSilhouette(70, 42, 0.75)}${termiteMound(52, 74, 0.8)}`
     : treeSeed === 1
-    ? `${acaciaSilhouette(62, 50, 1.05)}${acaciaSilhouette(22, 34, 0.7)}${termiteMound(80, 66, 0.7)}`
-    : `${acaciaSilhouette(45, 60, 0.95)}${acaciaSilhouette(78, 36, 0.65)}${adinkraStamp(20, 40, 0.9)}`;
+    ? `${acaciaSilhouette(62, 50, 1.05)}${acaciaSilhouette(27, 39, 0.65)}${termiteMound(80, 66, 0.7)}`
+    : `${acaciaSilhouette(45, 60, 0.95)}${acaciaSilhouette(73, 41, 0.6)}${adinkraStamp(20, 40, 0.9)}`;
   return wrap(defs, `<rect x="-10" y="-10" width="120" height="120" fill="url(#g-${id})"/><rect x="-10" y="-10" width="120" height="120" fill="url(#pat-${mc.id})"/>${trees}`);
 }
 
@@ -307,7 +326,7 @@ function svgSavannaVariant(seed) {
     ? `${acaciaSilhouette(36, 50, 1.2)}${baobabSilhouette(72, 64, 0.85)}${termiteMound(58, 78, 0.9)}`
     : seed === 1
     ? `${baobabSilhouette(30, 58, 0.95)}${acaciaSilhouette(68, 40, 1)}${adinkraStamp(50, 76, 1)}`
-    : `${acaciaSilhouette(50, 34, 0.85)}${acaciaSilhouette(74, 60, 0.95)}${baobabSilhouette(20, 72, 0.7, PAL.bark, true)}`;
+    : `${acaciaSilhouette(50, 34, 0.85)}${acaciaSilhouette(69, 60, 0.85)}${baobabSilhouette(26, 68, 0.62, PAL.bark, true)}`;
   return wrap(defs, `<rect x="-10" y="-10" width="120" height="120" fill="url(#g-${id})"/><rect x="-10" y="-10" width="120" height="120" fill="url(#pat-${mc.id})"/>${scene}`);
 }
 
@@ -339,7 +358,7 @@ function svgRiftHighlandsVariant(seed) {
     <path d="M 34,90 L 84,90 L 78,96 L 28,96 Z" fill="#8C2F2F"/>
   </g>`;
   return wrap(defs, `<rect x="-10" y="-10" width="120" height="120" fill="url(#g-${id})"/>${mountainRange('#5F6E4B', '#7C8C63', false, shift)}
-    ${seed === 2 ? terraces : euphorbiaSilhouette(78, 70, 1)}${seed === 0 ? euphorbiaSilhouette(18, 74, 0.7) : ''}`);
+    ${seed === 2 ? terraces : euphorbiaSilhouette(72, 68, 0.85)}${seed === 0 ? euphorbiaSilhouette(23, 70, 0.62) : ''}`);
 }
 
 function svgVolcanicVariant(seed) {
@@ -349,8 +368,9 @@ function svgVolcanicVariant(seed) {
   </radialGradient>`;
   const shift = seed === 0 ? 0 : seed === 1 ? 8 : -8;
   return wrap(defs, `<rect x="-10" y="-10" width="120" height="120" fill="#332C28"/>${mountainRange('#3B342F', '#4A423B', false, shift)}
-    <polygon points="${45 + shift},55 ${60 + shift},18 ${75 + shift},55" fill="url(#g-${id})"/>
+    <polygon points="${45 + shift},55 ${60 + shift},18 ${75 + shift},55" fill="url(#g-${id})" stroke="#241708" stroke-width="1.2"/>
     <circle cx="${60 + shift}" cy="22" r="4" fill="${PAL.lavaCore}"/>
+    <circle cx="${60 + shift}" cy="22" r="4" fill="none" stroke="#241708" stroke-width="0.8"/>
     <path d="M${58 + shift},50 Q${60 + shift},60 ${56 + shift},70" stroke="${PAL.ember}" stroke-width="2" fill="none" opacity="0.8"/>`);
 }
 
@@ -361,10 +381,10 @@ function svgBaobabForestVariant(seed) {
     <stop offset="0%" stop-color="#D2B168"/><stop offset="100%" stop-color="#BC9752"/>
   </linearGradient>${mc.defs}`;
   const trees = seed === 0
-    ? `${baobabSilhouette(35, 58, 1.05)}${baobabSilhouette(68, 38, 0.7, PAL.bark, true)}${baobabSilhouette(80, 70, 0.55)}`
+    ? `${baobabSilhouette(35, 58, 1.05)}${baobabSilhouette(67, 42, 0.62, PAL.bark, true)}${baobabSilhouette(76, 68, 0.5)}`
     : seed === 1
-    ? `${baobabSilhouette(50, 50, 1.2, PAL.bark, true)}${baobabSilhouette(20, 30, 0.6)}`
-    : `${baobabSilhouette(26, 66, 0.9)}${baobabSilhouette(60, 30, 0.85)}${baobabSilhouette(82, 60, 0.65, PAL.bark, true)}`;
+    ? `${baobabSilhouette(50, 55, 1.05, PAL.bark, true)}${baobabSilhouette(26, 36, 0.55)}`
+    : `${baobabSilhouette(28, 64, 0.8)}${baobabSilhouette(55, 36, 0.72)}${baobabSilhouette(78, 60, 0.55, PAL.bark, true)}`;
   return wrap(defs, `<rect x="-10" y="-10" width="120" height="120" fill="url(#g-${id})"/><rect x="-10" y="-10" width="120" height="120" fill="url(#pat-${mc.id})"/>${trees}`);
 }
 
@@ -418,7 +438,7 @@ function svgOasisVariant(seed) {
 
 const VARIANT_GENERATORS = {
   ocean: [svgOceanA, svgOceanB, svgOceanC],
-  coast: [() => svgCoastVariant(-4), () => svgCoastVariant(0), () => svgCoastVariant(6)],
+  coast: [() => svgCoastVariant(0), () => svgCoastVariant(1), () => svgCoastVariant(2)],
   sahara_desert: [() => svgSaharaVariant(-6, false), () => svgSaharaVariant(4, false), () => svgSaharaVariant(0, true)],
   sahel_grassland: [() => svgSahelVariant(0), () => svgSahelVariant(1), () => svgSahelVariant(2)],
   savanna: [() => svgSavannaVariant(0), () => svgSavannaVariant(1), () => svgSavannaVariant(2)],
