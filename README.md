@@ -359,6 +359,36 @@ a style preference. Coast is now entirely water-toned (turquoise, brighter than 
 with faint pale patches suggesting a visible sandy seafloor through clear shallow water,
 rather than dry land above the waterline.
 
+## Visual overhaul, part 8 (mounted units rebuilt: rider actually rides the mount)
+
+Direct feedback: the horseman looked like a man standing next to a horse, the camel
+rider's body blended into the camel's, the elephant rider's elephant was hard to make
+out, and the war chariot showed the cart in front of the horse instead of behind it.
+All four were rebuilt from scratch, each iterated against actual renders (not just code)
+until the composition read correctly:
+
+- **Horseman** — the horse got a straighter, wedge-profiled head (the previous curved
+  neck read more like a goose than a horse) and a clear back/withers line; the rider now
+  sits astride it with legs visibly draping down both flanks, rather than standing beside it.
+- **Camel rider** — first attempt gave the rider dangling legs like the horseman, but on
+  a camel those legs visually collided with the hump into a confusing blob. Fixed by
+  seating the rider on a saddle blanket draped *over* the hump with no dangling legs
+  (consistent with how camel riders are actually depicted) — hump and rider read as two
+  distinct things again.
+- **Elephant rider** — the elephant itself was rebuilt with an unmistakable fan ear,
+  curled trunk, and tusk (previously just a grey blob), topped with a small canopy
+  howdah the rider stands in, clearly above the elephant's shoulders.
+- **War chariot** — completely reordered. The horse is harnessed at the front (right
+    side, facing forward), connected by a visible pole/yoke to the cart trailing behind it
+  (left side) with two wheels and a charioteer standing inside holding the reins and a
+  raised spear — horse pulls, chariot follows, exactly as requested.
+
+All of these (plus Siege Tower and Catapult, per the request to consider scale) now
+render at 12-18% larger scale than other units — `token()` gained an optional `scale`
+parameter that enlarges both the medallion frame and the artwork together, so the extra
+detail these compositions need actually has room to be legible rather than being
+squeezed into the same footprint as a single standing archer.
+
 ## What's deliberately not included
 
 The original concept doc mentioned two explicitly optional items which this
