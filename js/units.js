@@ -1,130 +1,359 @@
-// units.js — Volumetric Unit Tokens + Inline SVG Art
-//
-// Art Direction Update:
-// - Tiered medallion frames (wood/bronze/gold) dictate power levels as before[cite: 1].
-// - Characters are fully rendered in a low-poly 3D style (full body, limbs, and gear).
-// - Base character figures feature female proportions.
-// - All sprites default to facing the left side of the frame.
-// - Mounts are massively scaled with fully seated, visible riders.
+// units.js — Unit roster with stats + medium‑poly 3D SVG token art
 
-const C = {
-  skinLit: '#D09A72', skinMid: '#A6724E', skinShad: '#7A4D30',
-  clothLit: '#E8D4A2', clothMid: '#C4AE75', clothShad: '#9C864D',
-  woodLit: '#A87A51', woodMid: '#825630', woodShad: '#593618',
-  steelLit: '#D2D7DD', steelMid: '#9CA4AC', steelShad: '#68727B',
-  goldLit: '#FBE18D', goldMid: '#D4B44A', goldShad: '#9C8128',
-  eleLit: '#A1A3A6', eleMid: '#74777A', eleShad: '#4D5054',
-  hair: '#1A120D', outline: 'none' // Outlines removed in favor of high-contrast facets
-};
-
-// Medallion framework logic remains functionally identical[cite: 1]
-function token(tier, figure, scale = 1) {
-  const bg = '#2E241A';
-  const rim = tier === 'elite' ? C.goldMid : C.woodMid;
-  const figureGroup = `<g transform="translate(32,32) scale(${scale}) translate(-32,-32)">${figure}</g>`;
-  
+function token(glyph, ring = '#F1CE73') {
   return `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="32" cy="32" r="28" fill="${bg}" stroke="${rim}" stroke-width="2.5"/>
-    <ellipse cx="32" cy="52" rx="14" ry="3" fill="#000" opacity="0.4"/>
-    ${figureGroup}
+    <circle cx="32" cy="32" r="27" fill="rgba(20,14,8,0.55)" stroke="${ring}" stroke-width="2.5"/>
+    <g fill="${ring}" stroke="none">${glyph}</g>
   </svg>`;
 }
 
-// --- Low-Poly Character Parts (Facing Left) ---------------------------------
+const glyphs = {
 
-/** Fully rendered female base figure - Volumetric low-poly */
-function polyFemaleVillager() {
-  return `
-    <!-- Back Leg (Left) -->
-    <polygon points="26,48 24,56 28,56 30,48" fill="${C.skinShad}"/>
-    <!-- Front Leg (Right) -->
-    <polygon points="34,48 32,58 37,58 38,48" fill="${C.skinMid}"/>
-    
-    <!-- Torso/Tunic (Female Proportions) -->
-    <polygon points="28,26 23,40 33,48 38,38 35,26" fill="${C.clothMid}"/>
-    <polygon points="28,26 23,40 30,44 33,28" fill="${C.clothLit}"/>
-    <polygon points="33,28 30,44 33,48 38,38 35,26" fill="${C.clothShad}"/>
-    
-    <!-- Left Arm (Holding Tool) -->
-    <polygon points="26,28 20,38 23,40 28,32" fill="${C.skinMid}"/>
-    
-    <!-- Head (Facing Left) -->
-    <polygon points="30,16 24,18 26,24 32,26 36,20" fill="${C.skinMid}"/>
-    <polygon points="30,16 24,18 28,22 32,18" fill="${C.skinLit}"/>
-    <!-- Hair -->
-    <polygon points="32,14 28,16 30,18 36,18 38,16" fill="${C.hair}"/>
-    <polygon points="36,18 34,26 38,24 38,16" fill="${C.hair}"/>
-    
-    <!-- Wooden Tool/Spear -->
-    <polygon points="18,48 20,48 26,22 24,22" fill="${C.woodMid}"/>
-  `;
-}
+  // ===== VILLAGER — Water carrier with pot (low‑poly) =====
+  villager: `
+    <polygon points="26,8 38,8 36,16 28,16" fill-opacity="0.9"/>
+    <polygon points="28,8 26,16 24,14 26,8" fill-opacity="0.5"/>
+    <polygon points="38,8 36,16 40,14 38,8" fill-opacity="0.7"/>
+    <polygon points="26,16 28,16 32,20 28,16" fill-opacity="0.4"/>
+    <polygon points="36,16 38,16 32,20 36,16" fill-opacity="0.6"/>
+    <circle cx="32" cy="18" r="6" fill-opacity="0.9"/>
+    <polygon points="28,18 32,22 36,18 32,14" fill-opacity="0.6"/>
+    <polygon points="28,24 36,24 40,34 24,34" fill-opacity="0.8"/>
+    <polygon points="28,24 24,34 26,34 30,26" fill-opacity="0.4"/>
+    <polygon points="36,24 40,34 38,34 34,26" fill-opacity="0.6"/>
+    <polygon points="24,34 40,34 42,46 22,46" fill-opacity="0.7"/>
+    <polygon points="24,34 22,46 24,44 26,34" fill-opacity="0.3"/>
+    <polygon points="40,34 42,46 40,44 38,34" fill-opacity="0.5"/>
+    <rect x="26" y="44" width="4" height="12" fill-opacity="0.8"/>
+    <rect x="32" y="44" width="4" height="12" fill-opacity="0.6"/>
+    <polygon points="27,26 20,32 24,36" fill-opacity="0.7"/>
+    <polygon points="37,26 44,32 40,36" fill-opacity="0.5"/>
+  `,
 
-/** Massive War Elephant - Full volumetric rendering */
-function polyWarElephant() {
-  return `
-    <!-- Back Legs -->
-    <polygon points="18,40 16,54 22,54 24,40" fill="${C.eleShad}"/>
-    <polygon points="42,40 40,54 46,54 48,40" fill="${C.eleShad}"/>
-    
-    <!-- Massive Body -->
-    <polygon points="12,24 8,42 48,42 54,26 34,16" fill="${C.eleMid}"/>
-    <polygon points="12,24 34,16 40,28 18,34" fill="${C.eleLit}"/>
-    <polygon points="18,34 40,28 48,42 8,42" fill="${C.eleShad}"/>
-    
-    <!-- Head & Trunk (Facing Left) -->
-    <polygon points="22,18 8,24 10,36 18,34" fill="${C.eleMid}"/>
-    <polygon points="8,24 2,38 6,48 10,36" fill="${C.eleMid}"/>
-    <polygon points="2,38 6,48 4,40" fill="${C.eleLit}"/>
-    
-    <!-- Tusk -->
-    <polygon points="10,34 0,30 2,36 10,38" fill="${C.clothLit}"/>
-    
-    <!-- Giant Ear -->
-    <polygon points="24,18 16,28 26,38 32,24" fill="${C.eleShad}"/>
-    
-    <!-- Front Legs -->
-    <polygon points="24,38 22,56 30,56 32,38" fill="${C.eleMid}"/>
-    <polygon points="24,38 22,56 26,56 28,38" fill="${C.eleLit}"/>
-    
-    <polygon points="46,38 44,56 52,56 54,38" fill="${C.eleMid}"/>
-  `;
-}
+  // ===== SCOUT — Hunter with spear and hide shield =====
+  scout: `
+    <ellipse cx="30" cy="34" rx="8" ry="12" transform="rotate(-15 30 34)" fill-opacity="0.8"/>
+    <polygon points="28,34 22,46 26,46 30,36" fill-opacity="0.5"/>
+    <polygon points="32,34 36,46 34,46 30,36" fill-opacity="0.7"/>
+    <circle cx="34" cy="18" r="7" fill-opacity="0.9"/>
+    <polygon points="30,18 34,24 38,18 34,12" fill-opacity="0.6"/>
+    <polygon points="28,42 22,56 26,56" fill-opacity="0.8"/>
+    <polygon points="32,42 40,56 36,56" fill-opacity="0.6"/>
+    <ellipse cx="22" cy="38" rx="9" ry="13" fill-opacity="0.7"/>
+    <polygon points="16,38 22,48 28,38 22,28" fill-opacity="0.4"/>
+    <rect x="40" y="22" width="6" height="16" fill-opacity="0.8"/>
+    <polygon points="40,22 46,22 44,30 40,28" fill-opacity="0.5"/>
+    <line x1="16" y1="16" x2="44" y2="34" fill-opacity="0.9" stroke="none" stroke-width="0"/>
+    <polygon points="44,34 50,30 48,38" fill-opacity="0.7"/>
+  `,
 
-/** Howdah Platform with seated full-body rider */
-function polyHowdahRider() {
-  return `
-    <!-- Howdah Base -->
-    <polygon points="28,16 22,22 42,22 46,16" fill="${C.woodMid}"/>
-    <polygon points="22,22 42,22 42,26 22,26" fill="${C.woodShad}"/>
-    <polygon points="28,16 22,22 42,22 46,16" fill="${C.goldMid}" opacity="0.3"/>
-    
-    <!-- Rider (Female, Facing Left) -->
-    <!-- Torso -->
-    <polygon points="32,8 28,16 36,16" fill="${C.clothMid}"/>
-    <!-- Head -->
-    <polygon points="34,4 28,6 30,10 36,8" fill="${C.skinMid}"/>
-    <!-- Spear -->
-    <polygon points="22,18 24,18 34,-2 32,-2" fill="${C.steelLit}"/>
-    
-    <!-- Howdah Side Rails -->
-    <polygon points="26,12 24,24 28,24 30,12" fill="${C.woodMid}"/>
-    <polygon points="42,12 40,24 44,24 46,12" fill="${C.woodMid}"/>
-  `;
-}
+  // ===== WARRIOR — Maasai with shuka, shield and rungu =====
+  warrior: `
+    <circle cx="32" cy="16" r="8" fill-opacity="0.9"/>
+    <polygon points="26,16 32,22 38,16 32,10" fill-opacity="0.6"/>
+    <rect x="26" y="22" width="12" height="14" fill-opacity="0.8"/>
+    <polygon points="26,22 38,22 34,28 30,28" fill-opacity="0.5"/>
+    <path d="M20 34 L44 34 L46 46 L18 46 Z" fill-opacity="0.7"/>
+    <polygon points="20,34 18,46 22,42 26,34" fill-opacity="0.3"/>
+    <polygon points="44,34 46,46 42,42 38,34" fill-opacity="0.5"/>
+    <line x1="22" y1="38" x2="42" y2="38" fill-opacity="0.9"/>
+    <line x1="24" y1="42" x2="40" y2="42" fill-opacity="0.8"/>
+    <rect x="26" y="44" width="6" height="12" fill-opacity="0.8"/>
+    <rect x="32" y="44" width="6" height="12" fill-opacity="0.6"/>
+    <circle cx="32" cy="24" r="10" fill-opacity="0.3"/>
+    <circle cx="32" cy="26" r="12" fill-opacity="0.2"/>
+    <path d="M16 22 L24 22 L24 44 L16 44 C10 44 10 22 16 22 Z" fill-opacity="0.9"/>
+    <polygon points="16,22 24,22 20,30 16,28" fill-opacity="0.5"/>
+    <line x1="40" y1="16" x2="48" y2="44" fill-opacity="0.9"/>
+    <circle cx="48" cy="44" r="6" fill-opacity="0.7"/>
+    <polygon points="48,44 42,46 48,50" fill-opacity="0.4"/>
+  `,
 
-const FIGURES = {
-  villager: () => polyFemaleVillager(),
-  elephant_rider: () => `${polyWarElephant()}${polyHowdahRider()}`,
+  // ===== SPEARMAN — Zulu with Nguni shield and iklwa =====
+  spearman: `
+    <circle cx="34" cy="18" r="7" fill-opacity="0.9"/>
+    <rect x="30" y="24" width="10" height="14" fill-opacity="0.8"/>
+    <rect x="26" y="44" width="6" height="12" fill-opacity="0.8"/>
+    <rect x="34" y="44" width="6" height="12" fill-opacity="0.6"/>
+    <ellipse cx="26" cy="34" rx="14" ry="22" fill-opacity="0.7"/>
+    <polygon points="16,34 26,50 36,34 26,18" fill-opacity="0.4"/>
+    <circle cx="22" cy="26" r="4" fill-opacity="0.9"/>
+    <circle cx="30" cy="30" r="5" fill-opacity="0.6"/>
+    <circle cx="24" cy="40" r="4" fill-opacity="0.5"/>
+    <line x1="46" y1="10" x2="38" y2="50" fill-opacity="0.9"/>
+    <polygon points="46,10 52,8 48,16" fill-opacity="0.7"/>
+  `,
+
+  // ===== ARCHER — Bushman/San with bow and quiver =====
+  archer: `
+    <circle cx="32" cy="20" r="6" fill-opacity="0.9"/>
+    <ellipse cx="32" cy="34" rx="7" ry="11" fill-opacity="0.8"/>
+    <path d="M28 44 L24 56 M36 44 L40 56" fill-opacity="0.8"/>
+    <rect x="40" y="22" width="6" height="16" fill-opacity="0.8"/>
+    <line x1="43" y1="22" x2="43" y2="38" fill-opacity="0.3"/>
+    <path d="M16 28 Q28 10 44 26 Q32 40 16 28" fill-opacity="0.9"/>
+    <polygon points="16,28 22,18 28,28 22,36" fill-opacity="0.5"/>
+    <line x1="20" y1="26" x2="48" y2="14" fill-opacity="0.8"/>
+    <polygon points="48,14 54,12 50,20" fill-opacity="0.7"/>
+  `,
+
+  // ===== SHIELD BEARER — Heavy infantry with tower shield =====
+  shield_bearer: `
+    <circle cx="32" cy="14" r="6" fill-opacity="0.9"/>
+    <rect x="26" y="22" width="12" height="22" fill-opacity="0.8"/>
+    <rect x="24" y="44" width="8" height="12" fill-opacity="0.8"/>
+    <rect x="32" y="44" width="8" height="12" fill-opacity="0.6"/>
+    <rect x="14" y="18" width="24" height="38" fill-opacity="0.7"/>
+    <polygon points="14,18 38,18 30,28 22,28" fill-opacity="0.4"/>
+    <line x1="14" y1="30" x2="38" y2="30" fill-opacity="0.9"/>
+    <circle cx="26" cy="38" r="4" fill-opacity="0.6"/>
+    <line x1="48" y1="18" x2="42" y2="46" fill-opacity="0.9"/>
+    <ellipse cx="48" cy="16" rx="6" ry="4" fill-opacity="0.7"/>
+  `,
+
+  // ===== HORSEMAN — Mounted cavalry =====
+  horseman: `
+    <ellipse cx="32" cy="36" rx="18" ry="8" fill-opacity="0.7"/>
+    <polygon points="18,36 32,42 46,36 32,30" fill-opacity="0.4"/>
+    <line x1="18" y1="44" x2="16" y2="56" fill-opacity="0.8"/>
+    <line x1="26" y1="44" x2="24" y2="56" fill-opacity="0.8"/>
+    <line x1="38" y1="44" x2="40" y2="56" fill-opacity="0.8"/>
+    <line x1="46" y1="44" x2="48" y2="56" fill-opacity="0.8"/>
+    <rect x="46" y="28" width="12" height="8" fill-opacity="0.8"/>
+    <circle cx="56" cy="32" r="3" fill-opacity="0.6"/>
+    <rect x="26" y="22" width="10" height="16" fill-opacity="0.8"/>
+    <circle cx="31" cy="18" r="6" fill-opacity="0.9"/>
+    <line x1="50" y1="18" x2="44" y2="40" fill-opacity="0.9"/>
+  `,
+
+  // ===== CAMEL RIDER — Desert skirmisher =====
+  camel_rider: `
+    <ellipse cx="32" cy="38" rx="16" ry="8" fill-opacity="0.7"/>
+    <line x1="20" y1="46" x2="18" y2="56" fill-opacity="0.8"/>
+    <line x1="28" y1="46" x2="26" y2="56" fill-opacity="0.8"/>
+    <line x1="36" y1="46" x2="38" y2="56" fill-opacity="0.8"/>
+    <line x1="44" y1="46" x2="46" y2="56" fill-opacity="0.8"/>
+    <path d="M44 34 Q54 24 50 14" fill-opacity="0.8"/>
+    <ellipse cx="50" cy="14" rx="6" ry="4" fill-opacity="0.9"/>
+    <rect x="28" y="22" width="8" height="16" fill-opacity="0.8"/>
+    <circle cx="32" cy="18" r="6" fill-opacity="0.9"/>
+    <line x1="18" y1="16" x2="28" y2="30" fill-opacity="0.9"/>
+  `,
+
+  // ===== AXEMAN — Heavy shock troops with feathered headdress =====
+  axeman: `
+    <circle cx="32" cy="18" r="8" fill-opacity="0.9"/>
+    <rect x="24" y="24" width="16" height="20" fill-opacity="0.8"/>
+    <rect x="26" y="44" width="8" height="12" fill-opacity="0.8"/>
+    <rect x="34" y="44" width="8" height="12" fill-opacity="0.6"/>
+    <polygon points="24,12 20,4 28,10" fill-opacity="0.9"/>
+    <polygon points="28,10 32,2 34,10" fill-opacity="0.7"/>
+    <polygon points="34,10 40,4 40,12" fill-opacity="0.5"/>
+    <line x1="44" y1="14" x2="52" y2="46" fill-opacity="0.9"/>
+    <polygon points="48,22 58,18 56,28" fill-opacity="0.7"/>
+  `,
+
+  // ===== SLINGER — Light skirmisher with sling =====
+  slinger: `
+    <circle cx="34" cy="20" r="7" fill-opacity="0.9"/>
+    <ellipse cx="30" cy="34" rx="7" ry="11" transform="rotate(10 30 34)" fill-opacity="0.8"/>
+    <path d="M26 44 L22 56 M34 44 L40 56" fill-opacity="0.8"/>
+    <path d="M14 30 Q22 38 28 28" fill-opacity="0.9"/>
+    <circle cx="14" cy="30" r="4" fill-opacity="0.7"/>
+    <circle cx="12" cy="30" r="2.5" fill-opacity="0.5"/>
+  `,
+
+  // ===== ROYAL GUARD — Elite with golden armor and crown =====
+  royal_guard: `
+    <circle cx="32" cy="16" r="8" fill-opacity="0.9"/>
+    <rect x="24" y="22" width="16" height="22" fill-opacity="0.8"/>
+    <path d="M18 26 L46 26 L48 48 L16 48 Z" fill-opacity="0.6"/>
+    <rect x="24" y="44" width="8" height="12" fill-opacity="0.8"/>
+    <rect x="34" y="44" width="8" height="12" fill-opacity="0.6"/>
+    <polygon points="22,10 42,10 44,16 20,16" fill-opacity="0.9"/>
+    <circle cx="32" cy="8" r="4" fill-opacity="0.7"/>
+    <ellipse cx="22" cy="34" rx="8" ry="14" fill-opacity="0.7"/>
+    <line x1="46" y1="12" x2="40" y2="50" fill-opacity="0.9"/>
+    <polygon points="46,12 52,10 48,18" fill-opacity="0.7"/>
+  `,
+
+  // ===== ELEPHANT RIDER — War elephant with howdah =====
+  elephant_rider: `
+    <ellipse cx="32" cy="36" rx="22" ry="14" fill-opacity="0.7"/>
+    <rect x="14" y="48" width="8" height="10" fill-opacity="0.8"/>
+    <rect x="24" y="48" width="8" height="10" fill-opacity="0.8"/>
+    <rect x="40" y="48" width="8" height="10" fill-opacity="0.8"/>
+    <rect x="50" y="48" width="8" height="10" fill-opacity="0.8"/>
+    <path d="M52 30 Q64 30 62 44 Q60 50 56 48 Q58 42 56 38" fill-opacity="0.7"/>
+    <polygon points="52,36 62,34 60,38" fill-opacity="0.9"/>
+    <polygon points="54,38 64,38 60,42" fill-opacity="0.5"/>
+    <rect x="22" y="22" width="20" height="6" fill-opacity="0.8"/>
+    <rect x="26" y="14" width="6" height="10" fill-opacity="0.8"/>
+    <circle cx="29" cy="12" r="4" fill-opacity="0.9"/>
+    <rect x="34" y="14" width="6" height="10" fill-opacity="0.6"/>
+    <circle cx="37" cy="12" r="4" fill-opacity="0.7"/>
+    <path d="M20 14 L44 14 L40 18 L24 18 Z" fill-opacity="0.5"/>
+  `,
+
+  // ===== WAR CHARIOT — Two horses and chariot =====
+  war_chariot: `
+    <rect x="40" y="32" width="18" height="8" fill-opacity="0.7"/>
+    <line x1="42" y1="40" x2="40" y2="52" fill-opacity="0.8"/>
+    <line x1="52" y1="40" x2="54" y2="52" fill-opacity="0.8"/>
+    <ellipse cx="58" cy="32" rx="4" ry="6" fill-opacity="0.6"/>
+    <rect x="14" y="34" width="22" height="10" fill-opacity="0.8"/>
+    <circle cx="18" cy="48" r="8" fill-opacity="0.6"/>
+    <circle cx="32" cy="48" r="8" fill-opacity="0.6"/>
+    <line x1="18" y1="48" x2="18" y2="40" fill-opacity="0.9"/>
+    <line x1="32" y1="48" x2="32" y2="40" fill-opacity="0.9"/>
+    <rect x="18" y="24" width="6" height="12" fill-opacity="0.8"/>
+    <circle cx="21" cy="20" r="5" fill-opacity="0.9"/>
+    <rect x="28" y="24" width="6" height="12" fill-opacity="0.6"/>
+    <circle cx="31" cy="20" r="5" fill-opacity="0.7"/>
+    <line x1="14" y1="18" x2="34" y2="26" fill-opacity="0.9"/>
+    <polygon points="14,18 10,16 12,22" fill-opacity="0.7"/>
+  `,
+
+  // ===== CROSSBOWMAN — Ranged mercenary =====
+  crossbowman: `
+    <circle cx="32" cy="18" r="8" fill-opacity="0.9"/>
+    <rect x="24" y="24" width="16" height="20" fill-opacity="0.8"/>
+    <rect x="26" y="44" width="8" height="12" fill-opacity="0.8"/>
+    <rect x="34" y="44" width="8" height="12" fill-opacity="0.6"/>
+    <polygon points="22,14 42,14 40,18 24,18" fill-opacity="0.7"/>
+    <rect x="18" y="30" width="18" height="4" fill-opacity="0.8"/>
+    <line x1="18" y1="26" x2="18" y2="34" fill-opacity="0.9"/>
+    <line x1="16" y1="26" x2="16" y2="34" fill-opacity="0.5"/>
+    <line x1="36" y1="32" x2="48" y2="28" fill-opacity="0.9"/>
+    <polygon points="48,28 52,26 50,30" fill-opacity="0.7"/>
+  `,
+
+  // ===== SIEGE TOWER — Rolling assault tower =====
+  siege_tower: `
+    <rect x="16" y="14" width="32" height="38" fill-opacity="0.7"/>
+    <polygon points="16,14 48,14 40,24 24,24" fill-opacity="0.4"/>
+    <line x1="16" y1="24" x2="48" y2="24" fill-opacity="0.9"/>
+    <line x1="16" y1="34" x2="48" y2="34" fill-opacity="0.9"/>
+    <line x1="16" y1="44" x2="48" y2="44" fill-opacity="0.9"/>
+    <rect x="22" y="18" width="6" height="6" fill-opacity="0.8"/>
+    <rect x="38" y="18" width="6" height="6" fill-opacity="0.8"/>
+    <rect x="22" y="28" width="6" height="6" fill-opacity="0.8"/>
+    <rect x="38" y="28" width="6" height="6" fill-opacity="0.8"/>
+    <line x1="25" y1="14" x2="25" y2="10" fill-opacity="0.9"/>
+    <line x1="41" y1="14" x2="41" y2="10" fill-opacity="0.9"/>
+    <circle cx="22" cy="52" r="6" fill-opacity="0.6"/>
+    <circle cx="42" cy="52" r="6" fill-opacity="0.6"/>
+  `,
+
+  // ===== CATAPULT — Siege engine =====
+  catapult: `
+    <rect x="12" y="40" width="40" height="8" fill-opacity="0.7"/>
+    <circle cx="18" cy="50" r="8" fill-opacity="0.6"/>
+    <circle cx="46" cy="50" r="8" fill-opacity="0.6"/>
+    <rect x="16" y="38" width="32" height="6" fill-opacity="0.8"/>
+    <line x1="24" y1="38" x2="44" y2="18" fill-opacity="0.9"/>
+    <polygon points="20,38 28,38 28,46 20,46" fill-opacity="0.7"/>
+    <polygon points="44,18 52,16 50,24" fill-opacity="0.8"/>
+    <circle cx="50" cy="28" r="6" fill-opacity="0.7"/>
+  `,
+
+  // ===== LION GUARD — Mystical elite with lion mane =====
+  lion_guard: `
+    <rect x="24" y="44" width="8" height="12" fill-opacity="0.8"/>
+    <rect x="32" y="44" width="8" height="12" fill-opacity="0.6"/>
+    <rect x="24" y="24" width="16" height="20" fill-opacity="0.8"/>
+    <path d="M18 18 C10 10 10 30 18 22 C26 34 38 34 46 22 C54 30 54 10 46 18 C38 6 26 6 18 18 Z" fill-opacity="0.7"/>
+    <circle cx="32" cy="18" r="8" fill-opacity="0.9"/>
+    <line x1="46" y1="16" x2="50" y2="44" fill-opacity="0.9"/>
+    <polygon points="50,44 54,46 50,48" fill-opacity="0.7"/>
+    <ellipse cx="20" cy="34" rx="6" ry="12" fill-opacity="0.7"/>
+  `,
+
+  // ===== SPIRIT SHAMAN — Ritual mask and staff =====
+  spirit_shaman: `
+    <path d="M20 44 L44 44 L48 56 L16 56 Z" fill-opacity="0.7"/>
+    <rect x="24" y="22" width="16" height="24" fill-opacity="0.8"/>
+    <path d="M22 12 L42 12 L44 28 L32 34 L20 28 Z" fill-opacity="0.9"/>
+    <ellipse cx="28" cy="20" rx="3" ry="5" fill-opacity="0.5"/>
+    <ellipse cx="36" cy="20" rx="3" ry="5" fill-opacity="0.5"/>
+    <line x1="48" y1="10" x2="44" y2="50" fill-opacity="0.9"/>
+    <circle cx="48" cy="10" r="6" fill-opacity="0.7"/>
+    <circle cx="14" cy="16" r="3" fill-opacity="0.6"/>
+    <circle cx="52" cy="32" r="4" fill-opacity="0.5"/>
+    <circle cx="10" cy="34" r="2" fill-opacity="0.4"/>
+  `,
+
+  // ===== ROYAL ELEPHANT — Command elephant =====
+  royal_elephant: `
+    <ellipse cx="32" cy="36" rx="24" ry="16" fill-opacity="0.7"/>
+    <rect x="12" y="50" width="10" height="8" fill-opacity="0.8"/>
+    <rect x="24" y="50" width="10" height="8" fill-opacity="0.8"/>
+    <rect x="40" y="50" width="10" height="8" fill-opacity="0.8"/>
+    <rect x="52" y="50" width="10" height="8" fill-opacity="0.8"/>
+    <path d="M54 30 Q66 30 64 46 Q62 54 56 50 Q60 42 58 38" fill-opacity="0.7"/>
+    <polygon points="54,36 66,32 64,38" fill-opacity="0.9"/>
+    <polygon points="56,40 68,38 64,44" fill-opacity="0.5"/>
+    <rect x="20" y="20" width="24" height="8" fill-opacity="0.8"/>
+    <path d="M16 12 L48 12 L44 18 L20 18 Z" fill-opacity="0.6"/>
+    <polygon points="22,12 30,4 38,12" fill-opacity="0.9"/>
+    <polygon points="20,4 22,12 18,12" fill-opacity="0.5"/>
+    <rect x="28" y="14" width="8" height="8" fill-opacity="0.8"/>
+    <circle cx="32" cy="10" r="5" fill-opacity="0.9"/>
+    <circle cx="32" cy="28" r="4" fill-opacity="0.6"/>
+    <circle cx="44" cy="36" r="4" fill-opacity="0.6"/>
+  `,
+
+  // ===== GREAT GENERAL — Legendary commander =====
+  great_general: `
+    <ellipse cx="32" cy="52" rx="22" ry="6" fill-opacity="0.7"/>
+    <rect x="24" y="42" width="10" height="12" fill-opacity="0.8"/>
+    <rect x="34" y="42" width="10" height="12" fill-opacity="0.6"/>
+    <path d="M18 24 L46 24 L48 48 L16 48 Z" fill-opacity="0.6"/>
+    <rect x="22" y="22" width="20" height="22" fill-opacity="0.8"/>
+    <circle cx="32" cy="16" r="10" fill-opacity="0.9"/>
+    <polygon points="20,10 44,10 46,16 18,16" fill-opacity="0.7"/>
+    <circle cx="32" cy="6" r="8" fill-opacity="0.8"/>
+    <polygon points="24,6 40,6 32,14" fill-opacity="0.5"/>
+    <line x1="48" y1="8" x2="44" y2="48" fill-opacity="0.9"/>
+    <ellipse cx="48" cy="8" rx="8" ry="4" fill-opacity="0.7"/>
+    <ellipse cx="18" cy="34" rx="8" ry="16" fill-opacity="0.7"/>
+  `,
 };
-
-function svgFor(id, tier, scale = 1) {
-  const fig = FIGURES[id];
-  return token(tier, fig ? fig() : '', scale);
-}
 
 export const UNITS = {
-  villager: { id: 'villager', name: 'Villager', tier: 'basic', svg: svgFor('villager', 'basic') },
-  elephant_rider: { id: 'elephant_rider', name: 'Elephant Rider', tier: 'elite', svg: svgFor('elephant_rider', 'elite', 1.05) },
-  // Additional units follow this volumetric construction model...
+  // --- basic ---
+  villager: { id: 'villager', name: 'Villager', tier: 'basic', hp: 5, attack: 0, defense: 1, move: 1, cost: { food: 20 }, role: 'civilian', svg: token(glyphs.villager) },
+  scout: { id: 'scout', name: 'Scout', tier: 'basic', hp: 8, attack: 1, defense: 1, move: 3, cost: { food: 15 }, role: 'recon', svg: token(glyphs.scout) },
+  warrior: { id: 'warrior', name: 'Warrior', tier: 'basic', hp: 12, attack: 3, defense: 3, move: 1, cost: { food: 10, wood: 5 }, role: 'melee', svg: token(glyphs.warrior) },
+  spearman: { id: 'spearman', name: 'Spearman', tier: 'basic', hp: 12, attack: 3, defense: 4, move: 1, cost: { food: 10, wood: 8 }, techReq: 'spears', role: 'anti-cavalry', svg: token(glyphs.spearman) },
+  archer: { id: 'archer', name: 'Archer', tier: 'basic', hp: 10, attack: 4, defense: 1, move: 1, range: 2, cost: { food: 12, wood: 8 }, role: 'ranged', svg: token(glyphs.archer) },
+  // --- advanced ---
+  shield_bearer: { id: 'shield_bearer', name: 'Shield Bearer', tier: 'advanced', hp: 16, attack: 3, defense: 6, move: 1, cost: { food: 15, copper: 5 }, techReq: 'shields', role: 'tank', svg: token(glyphs.shield_bearer) },
+  horseman: { id: 'horseman', name: 'Horseman', tier: 'advanced', hp: 14, attack: 5, defense: 2, move: 3, cost: { food: 20, horses: 10 }, techReq: 'mounted_warfare', role: 'cavalry', svg: token(glyphs.horseman) },
+  camel_rider: { id: 'camel_rider', name: 'Camel Rider', tier: 'advanced', hp: 14, attack: 4, defense: 2, move: 3, cost: { food: 20, horses: 8 }, techReq: 'mounted_warfare', role: 'desert-cavalry', svg: token(glyphs.camel_rider) },
+  axeman: { id: 'axeman', name: 'Axeman', tier: 'advanced', hp: 14, attack: 6, defense: 2, move: 1, cost: { food: 12, iron: 8 }, techReq: 'iron_working', role: 'melee', svg: token(glyphs.axeman) },
+  slinger: { id: 'slinger', name: 'Slinger', tier: 'advanced', hp: 9, attack: 3, defense: 1, move: 2, range: 2, cost: { food: 10, stone: 5 }, role: 'ranged', svg: token(glyphs.slinger) },
+  // --- elite ---
+  royal_guard: { id: 'royal_guard', name: 'Royal Guard', tier: 'elite', hp: 22, attack: 7, defense: 7, move: 1, cost: { food: 25, iron: 15, gold: 10 }, techReq: 'architecture', role: 'melee', svg: token(glyphs.royal_guard) },
+  elephant_rider: { id: 'elephant_rider', name: 'Elephant Rider', tier: 'elite', hp: 26, attack: 8, defense: 5, move: 2, cost: { food: 30, ivory: 15 }, techReq: 'animal_husbandry', resourceReq: 'ivory', role: 'shock', svg: token(glyphs.elephant_rider) },
+  war_chariot: { id: 'war_chariot', name: 'War Chariot', tier: 'elite', hp: 18, attack: 7, defense: 3, move: 4, cost: { food: 25, horses: 15, wood: 10 }, techReq: 'siege_weapons', role: 'cavalry', svg: token(glyphs.war_chariot) },
+  crossbowman: { id: 'crossbowman', name: 'Crossbowman', tier: 'elite', hp: 15, attack: 8, defense: 2, move: 1, range: 2, cost: { food: 20, iron: 12 }, techReq: 'siege_weapons', role: 'ranged', svg: token(glyphs.crossbowman) },
+  siege_tower: { id: 'siege_tower', name: 'Siege Tower', tier: 'elite', hp: 20, attack: 4, defense: 4, move: 1, cost: { food: 20, wood: 25 }, techReq: 'siege_weapons', role: 'siege', svg: token(glyphs.siege_tower) },
+  catapult: { id: 'catapult', name: 'Catapult', tier: 'elite', hp: 14, attack: 10, defense: 1, move: 1, range: 3, cost: { food: 20, wood: 20, iron: 10 }, techReq: 'siege_weapons', role: 'siege', svg: token(glyphs.catapult) },
+  // --- legendary ---
+  lion_guard: { id: 'lion_guard', name: 'Lion Guard', tier: 'legendary', hp: 30, attack: 10, defense: 8, move: 2, cost: { food: 40, gold: 25 }, techReq: 'architecture', unique: true, role: 'melee', svg: token(glyphs.lion_guard, '#D8A93A') },
+  spirit_shaman: { id: 'spirit_shaman', name: 'Spirit Shaman', tier: 'legendary', hp: 16, attack: 5, defense: 3, move: 2, range: 2, cost: { food: 30, gold: 20 }, techReq: 'currency', unique: true, role: 'support', svg: token(glyphs.spirit_shaman, '#2E6B4F') },
+  royal_elephant: { id: 'royal_elephant', name: 'Royal Elephant', tier: 'legendary', hp: 36, attack: 11, defense: 7, move: 2, cost: { food: 45, ivory: 25, gold: 15 }, techReq: 'siege_weapons', resourceReq: 'ivory', unique: true, role: 'shock', svg: token(glyphs.royal_elephant, '#D8A93A') },
+  great_general: { id: 'great_general', name: 'Great General', tier: 'legendary', hp: 24, attack: 9, defense: 6, move: 2, cost: { food: 35, gold: 30 }, techReq: 'siege_weapons', unique: true, role: 'command', svg: token(glyphs.great_general, '#8C2F2F') },
 };
+
+const _imgCache = new Map();
+export function getUnitImage(unitId) {
+  if (_imgCache.has(unitId)) return _imgCache.get(unitId);
+  const def = UNITS[unitId];
+  const img = new Image();
+  img.decoding = 'async';
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(def ? def.svg : token(''));
+  _imgCache.set(unitId, img);
+  return img;
+}
