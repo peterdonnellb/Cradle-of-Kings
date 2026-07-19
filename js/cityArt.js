@@ -26,6 +26,7 @@ function hut(cx, baseY, w, h, roofColor, wallColor, roofShadow = CLR.thatchShado
     <polygon points="${cx},${baseY - h} ${cx + hw},${baseY - h} ${cx + hw},${baseY} ${cx},${baseY}" fill="${wallColor}" stroke="${CLR.outline}" stroke-width="1"/>
     <polygon points="${cx - hw - 2},${baseY - h} ${cx},${peakY} ${cx},${baseY - h}" fill="${roofShadow}" stroke="${CLR.outline}" stroke-width="1"/>
     <polygon points="${cx},${peakY} ${cx + hw + 2},${baseY - h} ${cx},${baseY - h}" fill="${roofColor}" stroke="${CLR.outline}" stroke-width="1"/>
+    <line x1="${cx - hw * 0.4}" y1="${peakY + (baseY - h - peakY) * 0.42}" x2="${cx}" y2="${peakY}" stroke="#fff" stroke-width="0.8" opacity="0.22"/>
     <rect x="${cx - 2.2}" y="${baseY - 7}" width="4.4" height="7" fill="${CLR.shadow}"/>`;
 }
 
@@ -36,6 +37,7 @@ function stoneBuilding(x, y, w, h, roofColor, wallColor, roofShadow = CLR.stoneS
     <rect x="${midX}" y="${y}" width="${w / 2}" height="${h}" fill="${wallColor}" stroke="${CLR.outline}" stroke-width="1"/>
     <polygon points="${x - 2},${y} ${midX},${y - h * 0.4} ${midX},${y}" fill="${roofShadow}" stroke="${CLR.outline}" stroke-width="1"/>
     <polygon points="${midX},${y - h * 0.4} ${x + w + 2},${y} ${midX},${y}" fill="${roofColor}" stroke="${CLR.outline}" stroke-width="1"/>
+    <line x1="${x + w * 0.15}" y1="${y - h * 0.18}" x2="${midX}" y2="${y - h * 0.4}" stroke="#fff" stroke-width="0.7" opacity="0.2"/>
     <line x1="${x}" y1="${y + h * 0.42}" x2="${x + w}" y2="${y + h * 0.42}" stroke="${CLR.outline}" stroke-width="0.6" opacity="0.3"/>
     ${withDoor ? `<rect x="${midX - 3}" y="${y + h - 10}" width="6" height="10" fill="${CLR.shadow}" stroke="${CLR.outline}" stroke-width="0.6"/>` : ''}
     <rect x="${x + 2}" y="${y + 4}" width="3" height="4" fill="${CLR.stoneDark}" stroke="${CLR.outline}" stroke-width="0.5" opacity="0.9"/>`;

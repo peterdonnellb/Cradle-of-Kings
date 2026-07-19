@@ -10,18 +10,35 @@
 // making its own name invisible) to keep 12 clearly separate hue families rather than
 // letting several kingdoms share "gold" or "red" and rely on the eye to sort them out.
 
+function hexToRgb(hex) {
+  const h = hex.replace('#', '');
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+}
+function rgbToHex([r, g, b]) {
+  return '#' + [r, g, b].map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('');
+}
+/** Lightens a hex color toward white by `amount` (0-100). */
+function liftColor(hex, amount) {
+  const [r, g, b] = hexToRgb(hex);
+  const t = amount / 100;
+  return rgbToHex([r + (255 - r) * t, g + (255 - g) * t, b + (255 - b) * t]);
+}
+/** Mixes two hex colors by ratio (0 = all colorA, 1 = all colorB). */
+function mixColor(hexA, hexB, ratio) {
+  const a = hexToRgb(hexA), b = hexToRgb(hexB);
+  return rgbToHex([a[0] + (b[0] - a[0]) * ratio, a[1] + (b[1] - a[1]) * ratio, a[2] + (b[2] - a[2]) * ratio]);
+}
+
 function crest(id, primary, secondary, glyphPath) {
+  // Faceted shield backing: 3 flat panels (upper-left light, center base, lower-right dark)
+  // instead of a smooth gradient, matching the medium-poly language used elsewhere.
+  const light = liftColor(primary, 22);
+  const dark = mixColor(secondary, '#000000', 0.32);
   return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="cg-${id}" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="${primary}"/><stop offset="100%" stop-color="${secondary}"/>
-      </linearGradient>
-      <radialGradient id="cv-${id}" cx="50%" cy="35%" r="75%">
-        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.16"/><stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
-      </radialGradient>
-    </defs>
-    <polygon points="50,3 93,26 93,65 50,97 7,65 7,26" fill="url(#cg-${id})" stroke="#1C1208" stroke-width="2.5"/>
-    <polygon points="50,3 93,26 93,65 50,97 7,65 7,26" fill="url(#cv-${id})"/>
+    <polygon points="50,3 93,26 93,65 50,97 7,65 7,26" fill="${secondary}" stroke="#1C1208" stroke-width="2.5"/>
+    <polygon points="50,3 93,26 50,50 7,26" fill="${light}"/>
+    <polygon points="50,50 93,26 93,65 50,97" fill="${dark}"/>
+    <polygon points="50,50 7,26 7,65 50,97" fill="${primary}"/>
     <polygon points="50,11 86,29 86,63 50,89 14,63 14,29" fill="none" stroke="#F1CE73" stroke-width="1.4" opacity="0.65"/>
     <circle cx="50" cy="10" r="1.8" fill="#F1CE73" opacity="0.8"/><circle cx="50" cy="90" r="1.8" fill="#F1CE73" opacity="0.8"/>
     <circle cx="10" cy="27.5" r="1.8" fill="#F1CE73" opacity="0.8"/><circle cx="90" cy="27.5" r="1.8" fill="#F1CE73" opacity="0.8"/>

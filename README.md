@@ -76,6 +76,7 @@ js/
   noise.js            Seeded PRNG + fractal value noise (no external deps)
   worldgen.js         Procedural continent gen (biomes, edge-connected rivers, resources, spawns)
   biomes.js           11 biomes x 3 art variants + inline-SVG generators (African-art motifs)
+  facetedArt.js       Shared medium-poly faceted-shading toolkit (canopy/rock/gem/peak facets)
   resources.js        12 resource definitions + inline-SVG badge icons
   kingdoms.js         12 playable kingdoms, bonuses (+ numeric `effects`), inline-SVG crests
   kingdomEffects.js   Applies each kingdom's numeric bonus to combat/movement/city economy
@@ -388,6 +389,67 @@ render at 12-18% larger scale than other units — `token()` gained an optional 
 parameter that enlarges both the medallion frame and the artwork together, so the extra
 detail these compositions need actually has room to be legible rather than being
 squeezed into the same footprint as a single standing archer.
+
+## Visual overhaul, part 9 (medium-poly faceted art direction)
+
+After several rounds of flat-vector polish, the art direction shifted toward a
+**faceted, medium-poly look** — the same visual language used in premium isometric
+strategy-game art (distinct flat polygon facets under one consistent light source,
+rather than smooth gradients or flat silhouettes). The engine and camera are
+**unchanged** — this was explicitly scoped as an art-layer swap, not a rendering
+rewrite (an earlier true-isometric-extruded-tile prototype was built and then set
+aside once it was clear that wasn't actually what was wanted; it would have required
+real changes to `renderer.js`'s draw order and `hex.js`'s tile math, which flat
+faceted art does not).
+
+**New shared module: `facetedArt.js`.** A small reusable toolkit — `facetedCanopy`,
+`facetedTrunk`, `facetedRock`, `facetedGem`, `facetedPeak`, `facetedTuft`,
+`facetedWaterGleam`, `facetedCrop`, `contactShadow` — used by every other art file so
+the faceting language (light facet upper-left, base facet center, dark facet
+lower-right, one consistent "light source") stays consistent across biomes, resources,
+crests, and units instead of each file inventing its own shading convention.
+
+**Biomes**: baobabs, acacias, euphorbia, and palms were rebuilt as genuine faceted
+3D-looking forms (a baobab trunk is now three vertical color facets suggesting a round
+barrel, not a flat gradient silhouette; an acacia's umbrella canopy is a fan of
+alternating light/dark triangular facets). Mountains and the volcanic cone got the
+same treatment — each peak is a real 3-facet form (lit slope / ridge / shadowed slope)
+instead of one flat triangle. Water ripple strokes were replaced with faceted diamond
+gleam highlights for consistency.
+
+Rebuilding the trees larger surfaced a real regression risk: the new faceted baobab's
+branches initially reached further than the previous (already clip-tested) version,
+which would have reintroduced the tree-clipping bug fixed earlier. Caught this with
+the same point-in-polygon boundary checker built for that earlier fix, re-ran it
+against the new geometry, found 9 of 30 placements newly at risk, compacted the
+faceted baobab/acacia back down, and confirmed zero clipping risk before shipping.
+
+**Resources**: gold, gems, salt, iron, and copper are now real faceted crystal/gem/
+ore forms (`facetedGem`, built from 7 triangular facets around a peak) instead of
+flat layered ellipses/polygons — these read as *objects* now, not icons standing in
+for objects.
+
+**Kingdom crests**: the shield backing switched from a smooth two-color gradient to
+three flat faceted panels (matching the same light-source convention as everything
+else), computed from each kingdom's two brand colors via small new `liftColor`/
+`mixColor` hex-math helpers (also added to `units.js` for the same purpose).
+
+**Units**: rather than re-deriving all 20 hand-tuned compositions from scratch (risking
+the mount-clarity fixes from the previous round), the shared body-part functions
+(`head`, `torso`, `roundShield`, `towerShield`) and the horse/camel/elephant bodies
+were upgraded in place to true 3-facet shading — this cascades the faceted look across
+every unit that reuses them without touching each unit's individually-tuned pose.
+
+**Buildings & city art**: building icons already had 2-tone shading from an earlier
+pass; city huts and stone buildings gained a thin ridge-cap highlight line at the roof
+apex for a touch more dimensionality, consistent with the same light-source direction.
+
+Every category was verified after the change: full syntax + AST-parse scan across all
+files (this workflow has previously caught a swallowed-function-inside-unterminated-
+comment bug from a bad find-and-replace — same class of bug recurred once during this
+pass and was caught the same way), plus a 100-turn full-game regression (world gen,
+founding, research, production, combat, AI turns) to confirm the art swap didn't touch
+game logic.
 
 ## What's deliberately not included
 
