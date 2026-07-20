@@ -12,6 +12,27 @@
 let _fu = 0;
 export function fid() { return `f${(_fu++).toString(36)}`; }
 
+// --- hex color math (shared by kingdoms.js and units.js for faceted-panel shading) -----
+
+export function hexToRgb(hex) {
+  const h = hex.replace('#', '');
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+}
+export function rgbToHex([r, g, b]) {
+  return '#' + [r, g, b].map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('');
+}
+/** Lightens a hex color toward white by `amount` (0-100). */
+export function liftColor(hex, amount) {
+  const [r, g, b] = hexToRgb(hex);
+  const t = amount / 100;
+  return rgbToHex([r + (255 - r) * t, g + (255 - g) * t, b + (255 - b) * t]);
+}
+/** Mixes two hex colors by ratio (0 = all colorA, 1 = all colorB). */
+export function mixColor(hexA, hexB, ratio) {
+  const a = hexToRgb(hexA), b = hexToRgb(hexB);
+  return rgbToHex([a[0] + (b[0] - a[0]) * ratio, a[1] + (b[1] - a[1]) * ratio, a[2] + (b[2] - a[2]) * ratio]);
+}
+
 /** Soft radial ground/contact shadow (ellipse, no hard edge) — sells that an object sits
  *  ON the surface rather than floating above it. */
 export function contactShadow(cx, cy, rx, ry, opacity = 0.28) {

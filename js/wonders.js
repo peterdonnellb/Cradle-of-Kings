@@ -1,22 +1,70 @@
 // wonders.js — Empire wonders: one-per-world, tech-gated, permanent empire-wide bonuses
 
+import { facetedGem, contactShadow } from './facetedArt.js';
+
+const OUT = '#1C1208';
+
 function icon(inner, bg = '#D8A93A') {
+  const light = '#fff';
   return `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="24" cy="24" r="22" fill="${bg}" stroke="#1C1208" stroke-width="2"/>
+    <circle cx="24" cy="24" r="22" fill="${bg}" stroke="${OUT}" stroke-width="2"/>
+    <path d="M24,2 A22,22 0 0,1 44,18 L24,24Z" fill="${light}" opacity="0.08"/>
     <circle cx="24" cy="24" r="22" fill="none" stroke="#F1CE73" stroke-width="1" opacity="0.5"/>
+    ${contactShadow(24, 38, 13, 3, 0.22)}
     ${inner}
   </svg>`;
 }
 
 const glyphs = {
-  great_pyramid: `<polygon points="24,10 38,36 10,36" fill="#F1CE73"/><polygon points="24,10 31,36 24,36" fill="#D8A93A"/>`,
-  great_mosque: `<circle cx="24" cy="20" r="8" fill="#F6EFDD"/><rect x="20" y="26" width="8" height="12" fill="#F6EFDD"/><rect x="16" y="14" width="3" height="20" fill="#F6EFDD"/><rect x="29" y="14" width="3" height="20" fill="#F6EFDD"/>`,
-  royal_palace: `<rect x="12" y="22" width="24" height="14" fill="#8C3A1F"/><polygon points="10,22 24,10 38,22" fill="#B5502D"/><rect x="20" y="28" width="8" height="8" fill="#223A5E"/>`,
-  stone_circles: `<circle cx="16" cy="24" r="4" fill="#8D8474"/><circle cx="24" cy="16" r="4" fill="#8D8474"/><circle cx="32" cy="24" r="4" fill="#8D8474"/><circle cx="24" cy="32" r="4" fill="#8D8474"/>`,
-  great_library: `<rect x="12" y="16" width="6" height="20" fill="#4A3427"/><rect x="20" y="16" width="6" height="20" fill="#6B4B33"/><rect x="28" y="16" width="6" height="20" fill="#4A3427"/>`,
-  obelisk: `<polygon points="22,10 26,10 28,34 20,34" fill="#8D8474"/><polygon points="22,10 26,10 24,4" fill="#F1CE73"/>`,
-  great_dam: `<rect x="10" y="24" width="28" height="8" fill="#8D8474"/><path d="M12,32 Q24,40 36,32" fill="none" stroke="#4FA6AE" stroke-width="3"/>`,
-  royal_mint: `<circle cx="24" cy="24" r="10" fill="#D8A93A" stroke="#8C3A1F" stroke-width="1.5"/><text x="24" y="29" font-size="12" text-anchor="middle" fill="#5A3B12" font-family="Georgia,serif">Au</text>`,
+  // faceted 3-face pyramid: light left face, dark right face, thin cap highlight
+  great_pyramid: `<polygon points="24,8 10,36 24,36" fill="#F1CE73" stroke="${OUT}" stroke-width="1"/>
+    <polygon points="24,8 38,36 24,36" fill="#B5822A" stroke="${OUT}" stroke-width="1"/>
+    <line x1="24" y1="8" x2="17" y2="22" stroke="#fff" stroke-width="0.8" opacity="0.3"/>
+    <rect x="20" y="30" width="8" height="6" fill="#8C3A1F" opacity="0.5"/>`,
+
+  // faceted dome (3 vertical facets) over a rectangular base, twin faceted minarets
+  great_mosque: `<rect x="19" y="24" width="10" height="14" fill="#E8DFC8" stroke="${OUT}" stroke-width="1"/>
+    <rect x="19" y="24" width="5" height="14" fill="#F6EFDD" stroke="${OUT}" stroke-width="1"/>
+    <polygon points="24,10 18,20 24,22 30,20" fill="#F6EFDD" stroke="${OUT}" stroke-width="1"/>
+    <polygon points="24,10 24,22 30,20" fill="#D4C7A0" opacity="0.7"/>
+    <rect x="13" y="14" width="3" height="22" fill="#E8DFC8" stroke="${OUT}" stroke-width="0.8"/>
+    <rect x="32" y="14" width="3" height="22" fill="#D4C7A0" stroke="${OUT}" stroke-width="0.8"/>
+    <polygon points="14.5,10 13,14 16,14" fill="#F1CE73"/><polygon points="33.5,10 32,14 35,14" fill="#D8A93A"/>`,
+
+  // faceted palace: 3-facet roof, light/dark wall split
+  royal_palace: `<rect x="10" y="24" width="14" height="12" fill="#B5502D" stroke="${OUT}" stroke-width="1"/>
+    <rect x="24" y="24" width="14" height="12" fill="#8C3A1F" stroke="${OUT}" stroke-width="1"/>
+    <polygon points="8,24 24,10 24,24" fill="#D97B4F" stroke="${OUT}" stroke-width="1"/>
+    <polygon points="24,10 40,24 24,24" fill="#B5502D" stroke="${OUT}" stroke-width="1"/>
+    <rect x="20" y="28" width="8" height="8" fill="#223A5E" stroke="${OUT}" stroke-width="0.8"/>`,
+
+  // faceted standing stones: each a 2-facet monolith, not a flat circle
+  stone_circles: `${[[13, 26], [22, 20], [31, 26], [22, 32]].map(([x, y], i) => `
+    <polygon points="${x - 3},${y + 6} ${x - 3},${y - 4} ${x},${y - 6} ${x},${y + 6}" fill="#ADA48E"/>
+    <polygon points="${x},${y + 6} ${x},${y - 6} ${x + 3},${y - 4} ${x + 3},${y + 6}" fill="#7A7261"/>`).join('')}`,
+
+  // faceted book spines with a highlight edge instead of flat rectangles
+  great_library: `<polygon points="11,16 11,36 17,36 17,14" fill="#6B4B33" stroke="${OUT}" stroke-width="0.8"/>
+    <polygon points="19,14 19,36 25,36 25,12" fill="#8C6239" stroke="${OUT}" stroke-width="0.8"/>
+    <polygon points="27,16 27,36 33,36 33,14" fill="#4A3427" stroke="${OUT}" stroke-width="0.8"/>
+    <line x1="13" y1="18" x2="13" y2="34" stroke="#A87A4A" stroke-width="0.6" opacity="0.6"/>
+    <line x1="21" y1="16" x2="21" y2="34" stroke="#C99A5E" stroke-width="0.6" opacity="0.6"/>`,
+
+  // faceted obelisk: light-left / dark-right taper, gold capstone gem
+  obelisk: `<polygon points="20,34 21,12 24,8 24,34" fill="#ADA48E" stroke="${OUT}" stroke-width="1"/>
+    <polygon points="24,34 24,8 27,12 28,34" fill="#7A7261" stroke="${OUT}" stroke-width="1"/>
+    ${facetedGem(24, 9, 3.6, '#FFE27A', '#E8B93A', '#D8A030', '#A8721F')}`,
+
+  // faceted dam wall with a faceted water gleam instead of a stroked curve
+  great_dam: `<polygon points="8,26 8,34 40,34 40,22" fill="#8D8474" stroke="${OUT}" stroke-width="1"/>
+    <polygon points="8,26 24,22 40,22 40,29 8,34" fill="#655E51" opacity="0.5"/>
+    <polygon points="14,38 20,32 26,38 20,44" fill="#5FBEC4" opacity="0.8"/>
+    <polygon points="26,40 30,36 34,40 30,44" fill="#4FA6AE" opacity="0.7"/>`,
+
+  // faceted coin stack instead of a flat circle-with-text
+  royal_mint: `<ellipse cx="24" cy="32" rx="10" ry="3.4" fill="#B5822A" stroke="${OUT}" stroke-width="1"/>
+    <ellipse cx="24" cy="28" rx="10" ry="3.4" fill="#D8A93A" stroke="${OUT}" stroke-width="1"/>
+    ${facetedGem(24, 20, 7, '#FFE27A', '#F1CE73', '#D8A93A', '#B5822A')}`,
 };
 
 export const WONDERS = {

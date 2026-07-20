@@ -451,6 +451,65 @@ pass and was caught the same way), plus a 100-turn full-game regression (world g
 founding, research, production, combat, AI turns) to confirm the art swap didn't touch
 game logic.
 
+## Visual overhaul, part 10 (buildings, code cleanup)
+
+**Code cleanup**: `kingdoms.js` and `units.js` each had their own copy of identical
+hex-color-math helpers (`hexToRgb`/`rgbToHex`/`liftColor`/`mixColor`), introduced
+independently in the last two rounds. Moved the single implementation into
+`facetedArt.js` (which both files already depended on) and had both import it —
+real duplication risk removed, not just a style nit: two copies of the same logic
+drifting apart over future edits was the actual failure mode being avoided.
+
+**Buildings**: the 8 improvement icons (Granary, Market, Temple, Walls, Forge,
+Harbor, University, Palace) gained the same third-facet ridge-highlight treatment
+already used on city roofs and mountain peaks. The Forge's furnace glow was rebuilt
+using the shared `facetedGem` helper (matching the game's other ember/lava/gem
+moments) instead of a flat circle-in-circle. The Walls icon's stone blocks and
+crenellations now alternate light/dark facets instead of a uniform fill, consistent
+with the fortification treatment on the map's city art.
+
+**City art**: the small palm-tree accent used in coastal/riverside city tiles now
+reuses the faceted-frond language from the biome palm tree instead of a separate,
+older flat-silhouette version — one fewer inconsistent tree style in the game.
+
+Verified with the full syntax + AST-parse scan, the tree-clipping boundary checker
+(re-confirmed zero risk — this pass didn't touch tree geometry, but re-running a
+cheap check costs nothing and catches regressions from unrelated edits), and a
+100-turn game regression exercising the newly-faceted Walls and Forge buildings
+specifically.
+
+## Visual overhaul, part 11 (tech tree and wonders — the last flat-style holdouts)
+
+Auditing every art file against the faceted style turned up a real gap: `tech.js`
+(18 technology icons) and `wonders.js` (8 wonder icons) had never been touched by
+any of the previous art passes — they were still in their original single-flat-
+shape-per-icon style from Stage 3, predating even the "sprite" round. Since these
+are prominent, frequently-viewed progression UI (the tech tree modal, the wonder
+picker in every city's production menu), that's a real inconsistency worth closing
+rather than a minor gap.
+
+**All 18 tech icons** were rebuilt: the wheat sheaf, ram's horn, bronze/iron ingots,
+gear, monument, spear, shield, horse head, catapult, trade amphorae, market stall,
+coin (now a real `facetedGem`), caravan, fish, sail, compass star, and ship hull are
+all now faceted 2-4-facet forms instead of one flat shape each, with the hex badge
+frame gaining a subtle faceted highlight panel to match the same convention used on
+resource/wonder badges.
+
+**All 8 wonder icons** were rebuilt with real faceted monumental architecture: the
+Great Pyramid is a proper two-facet (lit-left/shadowed-right) pyramid instead of a
+flat triangle, the Great Mosque has a faceted dome and twin minarets, Stone Circles
+are individual two-facet monoliths instead of flat circles, the Obelisk has a
+faceted gold capstone gem, and the Royal Mint's icon changed from a circle with
+literal "Au" text to a faceted coin stack topped with a gem — more in keeping with
+an icon-based UI than a text abbreviation.
+
+Verified with the same three-part check used throughout this art pass: full syntax
++ AST-parse scan (still zero issues), the tree-clipping boundary checker (still
+zero risk — confirms unrelated files weren't touched), and a dedicated 300-turn
+regression that plays through the real tech tree and constructs three different
+wonders end-to-end to confirm research completion and wonder-uniqueness-locking
+still work correctly after the icon swap.
+
 ## What's deliberately not included
 
 The original concept doc mentioned two explicitly optional items which this

@@ -16,24 +16,7 @@
 // -> bronze -> gold-studded -> radiant sunburst) says *how powerful* it is; weapon material
 // escalates the same way.
 
-import { contactShadow, facetedGem } from './facetedArt.js';
-
-function hexToRgb(hex) {
-  const h = hex.replace('#', '');
-  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
-}
-function rgbToHex([r, g, b]) {
-  return '#' + [r, g, b].map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('');
-}
-function liftColor(hex, amount) {
-  const [r, g, b] = hexToRgb(hex);
-  const t = amount / 100;
-  return rgbToHex([r + (255 - r) * t, g + (255 - g) * t, b + (255 - b) * t]);
-}
-function mixColor(hexA, hexB, ratio) {
-  const a = hexToRgb(hexA), b = hexToRgb(hexB);
-  return rgbToHex([a[0] + (b[0] - a[0]) * ratio, a[1] + (b[1] - a[1]) * ratio, a[2] + (b[2] - a[2]) * ratio]);
-}
+import { contactShadow, facetedGem, liftColor, mixColor } from './facetedArt.js';
 
 const C = {
   skin: '#B07C54',

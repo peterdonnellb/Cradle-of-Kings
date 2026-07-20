@@ -10,24 +10,7 @@
 // making its own name invisible) to keep 12 clearly separate hue families rather than
 // letting several kingdoms share "gold" or "red" and rely on the eye to sort them out.
 
-function hexToRgb(hex) {
-  const h = hex.replace('#', '');
-  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
-}
-function rgbToHex([r, g, b]) {
-  return '#' + [r, g, b].map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('');
-}
-/** Lightens a hex color toward white by `amount` (0-100). */
-function liftColor(hex, amount) {
-  const [r, g, b] = hexToRgb(hex);
-  const t = amount / 100;
-  return rgbToHex([r + (255 - r) * t, g + (255 - g) * t, b + (255 - b) * t]);
-}
-/** Mixes two hex colors by ratio (0 = all colorA, 1 = all colorB). */
-function mixColor(hexA, hexB, ratio) {
-  const a = hexToRgb(hexA), b = hexToRgb(hexB);
-  return rgbToHex([a[0] + (b[0] - a[0]) * ratio, a[1] + (b[1] - a[1]) * ratio, a[2] + (b[2] - a[2]) * ratio]);
-}
+import { liftColor, mixColor } from './facetedArt.js';
 
 function crest(id, primary, secondary, glyphPath) {
   // Faceted shield backing: 3 flat panels (upper-left light, center base, lower-right dark)

@@ -50,12 +50,12 @@ function marketStall(x, y) {
 }
 
 function palmAccent(cx, cy, scale = 1) {
+  const light = '#5FA06B', base = '#3E7A4A', dark = '#255238';
   return `<g transform="translate(${cx},${cy}) scale(${scale})">
     <path d="M0,6 Q-1,-4 0,-8" stroke="${CLR.mudbrickShadow}" stroke-width="1.6" fill="none" stroke-linecap="round"/>
-    <g fill="#3E7A4A" stroke="${CLR.outline}" stroke-width="0.5">
-      <path d="M0,-8 Q-7,-11 -9,-5 Q-3,-7 0,-8Z"/><path d="M0,-8 Q7,-11 9,-5 Q3,-7 0,-8Z"/><path d="M0,-8 Q0,-2 0,3 Q-1,-2 0,-8Z"/>
-    </g>
-    <path d="M-6,-9 Q0,-11 6,-9" fill="none" stroke="#5FA06B" stroke-width="0.6" opacity="0.7"/>
+    <polygon points="0,-8 -8,-11 -9,-6" fill="${light}" stroke="${CLR.outline}" stroke-width="0.5"/>
+    <polygon points="0,-8 7,-11 9,-5" fill="${base}" stroke="${CLR.outline}" stroke-width="0.5"/>
+    <polygon points="0,-8 0,-1 -3,3" fill="${dark}" stroke="${CLR.outline}" stroke-width="0.5"/>
   </g>`;
 }
 
